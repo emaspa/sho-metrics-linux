@@ -30,21 +30,42 @@ Sensor sources:
 
 ## Install
 
-Requirements: Node.js 20+ on PATH. Then, from a checkout of this repository:
+Requirements: Node.js 20 or newer.
+
+Arch:
+
+```sh
+paru -S sho-metrics-source-linux
+```
+
+Fedora 43 and 44:
+
+```sh
+sudo dnf copr enable emaspa/sho-metrics
+sudo dnf install sho-metrics-source-linux
+```
+
+Ubuntu 26.04 and every other distro: download the `.deb` or the Arch or Fedora
+package from
+[Releases](https://github.com/emaspa/sho-metrics-linux/releases), or install
+from a checkout:
 
 ```sh
 cd packages/source-linux
 ./install.sh
 ```
 
-The script installs dependencies, writes
-`~/.config/systemd/user/shometrics-linux-helper.service` pointing at this
-checkout, and enables+starts it. Re-run it after pulling a new revision.
+Then enable the service for your user:
 
-Distro packages for Arch, Fedora and Ubuntu live in `packaging/`; see
-`packaging/README.md` for how they are built and published. They install the
-same unit name and use the same socket, so the plugin cannot tell the
-difference.
+```sh
+systemctl --user enable --now shometrics-linux-helper.service
+```
+
+`install.sh` writes `~/.config/systemd/user/shometrics-linux-helper.service`
+pointing at the checkout, and enables and starts it for you. Re-run it after
+pulling a new revision. The distro packages install the same unit name and use
+the same socket, so the plugin cannot tell which one you used. How they are
+built and published is in `packaging/README.md`.
 
 The daemon listens on
 `/tmp/shometrics-helper/ShoMetrics.Source.Windows.Grpc.v1` (unix socket; the
