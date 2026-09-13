@@ -144,9 +144,21 @@ jobs:
           {
             echo "Sho Metrics Linux plugin ${PLUGIN_VERSION} (${TAG_NAME}), built from the \`linux\` branch for [OpenDeck](https://github.com/nekename/OpenDeck)."
             echo
-            echo "Requires the Linux helper daemon for deep sensors: [shometrics-linux-helper](https://github.com/emaspa/shometrics-linux-helper)."
+            echo "Install through OpenDeck's plugin manager or unzip into \`~/.config/opendeck/plugins/\`, then restart OpenDeck."
             echo
-            echo "Install through OpenDeck's plugin manager or unzip into \`~/.config/opendeck/plugins/\`."
+            echo "Deep sensors (hwmon, NVIDIA via LACT, MangoHud FPS) need the helper daemon: run \`packages/source-linux/install.sh\` from this tag, see its [README](https://github.com/emaspa/sho-metrics-linux/tree/${TAG_NAME}/packages/source-linux)."
+            echo
+            echo "### Migrating from the old patched plugin (com.ez.sho-metrics)"
+            echo
+            echo "This fork uses a new plugin id, \`com.ez.sho-metrics-linux\`. To keep existing keys instead of re-adding them, quit OpenDeck, then:"
+            echo
+            echo '```sh'
+            echo 'cp -r ~/.config/opendeck/profiles ~/opendeck-profiles.bak'
+            echo "sed -i 's/com\.ez\.sho-metrics/com.ez.sho-metrics-linux/g' ~/.config/opendeck/profiles/*/Default.json"
+            echo 'rm -rf ~/.config/opendeck/plugins/com.ez.sho-metrics.sdPlugin'
+            echo '```'
+            echo
+            echo "Then install this release and start OpenDeck. Stored settings are unchanged, so keys, sensor selections, and layouts carry over. Fresh installs skip this section."
           } > "${publish_dir}/release-notes.md"
 
           (
