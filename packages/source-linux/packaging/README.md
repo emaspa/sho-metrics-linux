@@ -15,6 +15,22 @@ packaging/
   dist/                           build output, not in git
 ```
 
+Where the packages live:
+
+| Channel | Page |
+| --- | --- |
+| AUR | https://aur.archlinux.org/packages/sho-metrics-source-linux |
+| COPR | https://copr.fedorainfracloud.org/coprs/emaspa/sho-metrics/ |
+| PPA | not created yet, see the PPA section |
+| Release assets | https://github.com/emaspa/sho-metrics-linux/releases |
+
+Credentials are not on the desktop. The COPR token, the Launchpad signing key
+and dput all live on the `openbox` host (`ssh openbox`, already in
+`~/.ssh/config`), which is the same box OpenXLR publishes from and happens to
+run the PPA's target release, Ubuntu 26.04. Note that copr-cli is not on the
+PATH over a non-interactive ssh session; call `~/.local/bin/copr-cli`. The AUR
+is the exception and pushes straight from the desktop over the default ssh key.
+
 ## What gets installed
 
 Same paths on all three distros:
@@ -63,9 +79,9 @@ revision N. Each packaging system needs that written its own way.
 
 | | Version | Bump for a packaging-only fix |
 | --- | --- | --- |
-| AUR | `pkgver=0.3.0.linux.1` | `pkgrel` |
-| RPM | `Version: 0.3.0^linux1` | `Release` |
-| Debian | `0.3.0+linux1-0ppa1~ubuntu26.04.1` | the `0ppa1` part |
+| AUR | `pkgver=0.3.0.linux.2` | `pkgrel` |
+| RPM | `Version: 0.3.0^linux2` | `Release` |
+| Debian | `0.3.0+linux2-0ppa1~ubuntu26.04.1` | the `0ppa1` part |
 
 The separators are not interchangeable. Arch forbids `-` in `pkgver`. RPM's `^`
 sorts above plain `0.3.0`, which is what a fork revision should do, and needs
@@ -81,56 +97,73 @@ refuses to build if the tag argument disagrees with `server.mjs` or
 
 ## Every release starts here
 
-Tag the fork, then build the tarballs:
+CI builds the packages. The Linux release workflow runs `make-dist.sh` for the
+tag, then builds the three distro packages in containers and attaches
+everything to the GitHub release:
+
+```sh
+gh workflow run linux-release.yml -R emaspa/sho-metrics-linux --ref linux \
+    -f tag=v0.3.0-linux.2 -f plugin_version=0.3.0.2 \
+    -f dry_run=true -f prerelease=false
+```
+
+Run it with `dry_run=true` first. That builds every package and lists the
+staged assets without creating a tag or a release. Then run the same command
+with `dry_run=false`.
+
+One trap, learned the hard way: dispatching straight after a `git push` can
+resolve the branch to the previous commit. Check first, and only dispatch once
+they agree:
+
+```sh
+git rev-parse HEAD
+gh api repos/emaspa/sho-metrics-linux/commits/linux -q .sha
+```
+
+A release carries these helper assets, all listed in `checksums.txt`:
+
+| Asset | What |
+| --- | --- |
+| `sho-metrics-source-linux-<ver>.tar.gz` | daemon and contract, about 40 KB |
+| `sho-metrics-source-linux-<ver>-node-modules.tar.gz` | dependencies from `npm ci --omit=dev` |
+| `sho-metrics-source-linux-<ver>-1-any.pkg.tar.zst` | Arch package |
+| `sho-metrics-source-linux-<ver>-1.fc43.noarch.rpm`, `...fc44...` | Fedora packages |
+| `sho-metrics-source-linux_<ver>_all.deb` | Ubuntu 26.04 package |
+
+Asset names are normalised when they are staged. GitHub rewrites characters
+outside `[A-Za-z0-9._-]` on upload, which would mangle the RPM's `^` and the
+deb's `+` and `~`, so those files are renamed to the fork version. What is
+inside each package is untouched.
+
+The three publishing channels below all build from the source tarball asset
+rather than from a checkout, so the thing users install is the thing the
+release published. `make-dist.sh` still works locally for testing:
 
 ```sh
 cd packages/source-linux/packaging
-./make-dist.sh 0.3.0-linux.1
+./make-dist.sh 0.3.0-linux.2
 ```
 
-That writes three files to `dist/`:
-
-- `sho-metrics-source-linux-0.3.0-linux.1.tar.gz`, the daemon and the contract,
-  about 40 KB
-- `sho-metrics-source-linux-0.3.0-linux.1-node-modules.tar.gz`, dependencies
-  installed from `package-lock.json` with `npm ci --omit=dev`
-- `sho-metrics-source-linux_0.3.0+linux1.orig.tar.gz`, both of the above in one
-  tree, for dpkg
-
-Attach the first two to the GitHub release for the tag. The AUR and RPM recipes
-download them from there. The third one stays local; `dput` uploads it with the
-Debian source package.
+It also writes `sho-metrics-source-linux_<debver>.orig.tar.gz`, which is not a
+release asset. That one is for dpkg and is rebuilt on the machine that signs
+the PPA upload.
 
 Tar entries are sorted, timestamped from the tag's commit and stripped of uids,
-and gzip runs with `-n`, so rebuilding from the same tag gives the same bytes
-and the same checksums.
+and gzip runs with `-n`, so rebuilding from the same commit gives the same
+bytes and the same checksums.
 
 ## AUR
 
-The name `sho-metrics-source-linux` was free when this was written (checked
-against the aurweb RPC; `shometrics` matched nothing at all).
-
-### One-time setup
-
-Create an account at https://aur.archlinux.org, add an SSH public key under My
-Account, then:
-
-```sh
-ssh-keygen -t ed25519 -f ~/.ssh/aur -C "aur"
-cat >> ~/.ssh/config <<'EOF'
-Host aur.archlinux.org
-  IdentityFile ~/.ssh/aur
-  User aur
-EOF
-git clone ssh://aur@aur.archlinux.org/sho-metrics-source-linux.git ~/src/aur-sho-metrics
-```
-
-The clone is empty for a new package. That is normal; the first push creates it.
+Published as
+[sho-metrics-source-linux](https://aur.archlinux.org/packages/sho-metrics-source-linux).
+The clone lives at `~/aur-publish/sho-metrics-source-linux`, next to the
+OpenXLR ones, and pushes over the default ssh key. Check access with
+`ssh -T aur@aur.archlinux.org`.
 
 ### Publish
 
 ```sh
-cd ~/src/aur-sho-metrics
+cd ~/aur-publish/sho-metrics-source-linux
 cp ~/sho_metrics/packages/source-linux/packaging/aur/PKGBUILD .
 cp ~/sho_metrics/packages/source-linux/packaging/aur/sho-metrics-source-linux.install .
 
@@ -139,14 +172,18 @@ makepkg --printsrcinfo > .SRCINFO   # required, the AUR rejects pushes without i
 makepkg -f                          # build it once before pushing
 
 git add PKGBUILD .SRCINFO sho-metrics-source-linux.install
-git commit -m "sho-metrics-source-linux 0.3.0.linux.1-1"
+git commit -m "sho-metrics-source-linux 0.3.0.linux.2-1: initial release"
 git push
 ```
 
-The committed `PKGBUILD` carries a zeroed `sha256sums` placeholder because the
-release asset does not exist until you upload it. `updpkgsums` replaces it.
-Never push the placeholder, and never replace it with `SKIP`: makepkg would
-then accept a tampered tarball silently.
+`updpkgsums` downloads the release asset and writes its real checksum, so the
+release has to exist first. The `PKGBUILD` in this repo carries the checksum
+that was actually published; if you bump `_forkver` without running
+`updpkgsums`, makepkg will refuse the mismatched tarball. Never paper over that
+with `SKIP`, which makes makepkg accept any tarball silently.
+
+Copy the updated `PKGBUILD` and `.SRCINFO` back into this repo after pushing,
+so the two stay in step.
 
 `build()` runs `npm ci` against the lockfile, which needs network during the
 build. That is normal for AUR Node packages and it keeps the dependency set
@@ -156,48 +193,51 @@ For a packaging-only fix, bump `pkgrel` and push again. For a new fork tag,
 change `_forkver` and `pkgver`, reset `pkgrel=1`, then `updpkgsums` and
 regenerate `.SRCINFO`.
 
-## COPR
-
-### One-time setup
-
-Get an account at https://copr.fedorainfracloud.org (FAS login), then visit
-https://copr.fedorainfracloud.org/api/ and paste the token block into
-`~/.config/copr`. Recent copr-cli versions also offer `copr-cli login`, which
-does the same through the browser; check `copr-cli login --help` before relying
-on it.
-
-Install the client with `dnf install copr-cli` on Fedora, or `pip install
-copr-cli` anywhere else.
-
-Create the project once, choosing chroots from `copr-cli list-chroots`:
+Users install it the usual way:
 
 ```sh
-copr-cli create sho-metrics \
-    --chroot fedora-42-x86_64 --chroot fedora-43-x86_64 \
-    --description "Sho Metrics Linux helper daemon"
+paru -S sho-metrics-source-linux
+systemctl --user enable --now shometrics-linux-helper.service
 ```
 
-Internet access during builds is not needed; the dependencies arrive in the
-source RPM.
+## COPR
+
+The project is https://copr.fedorainfracloud.org/coprs/emaspa/sho-metrics/,
+built for fedora-43-x86_64 and fedora-44-x86_64, the two releases Bodhi lists
+as current. It was created with:
+
+```sh
+ssh openbox '~/.local/bin/copr-cli create sho-metrics \
+    --chroot fedora-43-x86_64 --chroot fedora-44-x86_64 \
+    --description "..." --instructions "..."'
+```
+
+Internet access during builds stays off; the dependencies arrive inside the
+source RPM. Add a chroot later with `copr-cli edit-chroot`, and add a repo to
+one chroot rather than to the project, which would clear the project list.
 
 ### Publish
 
-Build the source RPM, then hand it to COPR. From the repository root:
+Build the source RPM from the release assets, then hand it to COPR. The SRPM
+can be built anywhere, including Arch: `rpmbuild -bs` only packs the spec and
+its sources, and the `%systemd_user_*` macros expand later inside the Fedora
+build root.
 
 ```sh
 mkdir -p rpmbuild/SOURCES
-cp packages/source-linux/packaging/dist/sho-metrics-source-linux-0.3.0-linux.1*.tar.gz rpmbuild/SOURCES/
+gh release download v0.3.0-linux.2 -R emaspa/sho-metrics-linux \
+    -p "sho-metrics-source-linux-0.3.0-linux.2.tar.gz" \
+    -p "sho-metrics-source-linux-0.3.0-linux.2-node-modules.tar.gz" \
+    -D rpmbuild/SOURCES
 rpmbuild --define "_topdir $PWD/rpmbuild" -bs packages/source-linux/packaging/rpm/sho-metrics-source-linux.spec
-copr-cli build emaspa/sho-metrics rpmbuild/SRPMS/sho-metrics-source-linux-0.3.0^linux1-1*.src.rpm
+
+scp 'rpmbuild/SRPMS/sho-metrics-source-linux-0.3.0^linux2-1.src.rpm' openbox:~/sho-metrics-copr/
+ssh openbox '~/.local/bin/copr-cli build --nowait emaspa/sho-metrics ~/sho-metrics-copr/sho-metrics-source-linux-0.3.0\^linux2-1.src.rpm'
+ssh openbox '~/.local/bin/copr-cli watch-build <build id>'
 ```
 
-The `cp` step is only a shortcut for tarballs you just built. Once the release
-assets are up, `spectool -g -R -C rpmbuild/SOURCES <spec>` (from rpmdevtools)
-downloads them instead.
-
-`rpmbuild -bs` only packs the spec and its sources, so an SRPM built on a
-non-Fedora machine is fine: the `%systemd_user_*` macros expand inside the
-Fedora build root, not here.
+Escape the `^` in the filename over ssh, or the remote shell treats it as a
+pipe character.
 
 Users then install with:
 
@@ -234,49 +274,56 @@ Older series are a different story and are the reason this is resolute-only:
 noble (24.04 LTS) still ships nodejs 18.19.1, too old for the daemon, and would
 force users into a NodeSource repository. Questing (25.10) has 20.19.4 and would
 work. To build for another series anyway, run
-`make-source-package.sh 0.3.0-linux.1 <series> <release number>`, which rewrites
+`make-source-package.sh 0.3.0-linux.2 <series> <release number>`, which rewrites
 the changelog suffix for you.
 
-### One-time setup
+### The one step that needs a browser
 
-1. Create a Launchpad account and sign in.
-2. Upload your OpenPGP public key: `gpg --send-keys --keyserver keyserver.ubuntu.com <FINGERPRINT>`,
-   then add the fingerprint at https://launchpad.net/~/+editpgpkeys and confirm
-   the encrypted mail Launchpad sends back.
-3. Add your SSH public key at https://launchpad.net/~/+editsshkeys.
-4. Create the PPA at https://launchpad.net/~YOURUSER/+activate-ppa. Name it
-   `sho-metrics`.
-5. Install the tooling on an Ubuntu machine or container:
-   `sudo apt install devscripts debhelper dput dpkg-dev`.
+The Launchpad account is `~sparvoli`, and its signing key
+`0E12EEBBC7B9A54D` is on openbox and already registered. The PPA itself does
+not exist yet, and creating one needs either the web form or an OAuth token
+that this fleet does not have. The existing PPAs are `openxlr` and
+`wireview-hwmon`; the helper does not belong in either.
+
+So one click is needed: https://launchpad.net/~sparvoli/+activate-ppa, named
+`sho-metrics`. After that, nothing else about this channel is manual. While you
+are there, set the PPA's supported series to resolute, so a mistargeted upload
+fails loudly instead of building against something else.
 
 ### Publish
 
+openbox runs Ubuntu 26.04, which is the target series, so the source package is
+built and signed there from a clean checkout of the tag:
+
 ```sh
-cd packages/source-linux/packaging
-./make-dist.sh 0.3.0-linux.1
-./debian/make-source-package.sh 0.3.0-linux.1
-dput ppa:emaspa/sho-metrics dist/deb-resolute/sho-metrics-source-linux_0.3.0+linux1-0ppa1~ubuntu26.04.1_source.changes
+ssh openbox
+git clone --depth 1 --branch v0.3.0-linux.2 https://github.com/emaspa/sho-metrics-linux.git ~/sho-metrics-ppa/repo
+cd ~/sho-metrics-ppa/repo
+packages/source-linux/packaging/make-dist.sh 0.3.0-linux.2
+export DEBEMAIL="sparvoli@gmail.com" DEBFULLNAME="Emanuele Sparvoli"
+DPKG_FLAGS="-S -sa -k0E12EEBBC7B9A54D" \
+    packages/source-linux/packaging/debian/make-source-package.sh 0.3.0-linux.2
+dput ppa:sparvoli/sho-metrics \
+    packages/source-linux/packaging/dist/deb-resolute/sho-metrics-source-linux_0.3.0+linux2-0ppa1~ubuntu26.04.1_source.changes
 ```
 
-`make-source-package.sh` unpacks the orig tarball, drops `debian/` in, and runs
-`dpkg-buildpackage -S -sa`, which signs the upload with your default GPG key.
-Use `-k<FINGERPRINT>` if you have several. Launchpad emails a result within
+`DEBEMAIL` and `DEBFULLNAME` have to match the key, or the signature check
+rejects the upload. `make-source-package.sh` unpacks the orig tarball, drops
+`debian/` in, and runs `dpkg-buildpackage`, which signs both the `.dsc` and the
+`.changes`. Verify with `gpg --verify *_source.changes` before uploading.
+
+The `-sa` flag includes the orig tarball, which Launchpad needs the first time
+it sees upstream version `0.3.0+linux2`. Later revisions of the same upstream
+version can use `-sd` to skip re-uploading it. Launchpad emails a result within
 minutes and will not accept the same version twice, so bump the `0ppa1` part
 after a rejection.
-
-The `-sa` flag includes the orig tarball in the upload, which Launchpad needs
-the first time it sees upstream version `0.3.0+linux1`. Later revisions of the
-same upstream version can use `-sd` to skip re-uploading it.
 
 Users then install with:
 
 ```sh
-sudo add-apt-repository ppa:emaspa/sho-metrics
+sudo add-apt-repository ppa:sparvoli/sho-metrics
 sudo apt install sho-metrics-source-linux
 ```
-
-Set the PPA's supported series to resolute in its Launchpad settings, so a
-mistargeted upload fails loudly instead of building against something else.
 
 For a new fork tag, add a changelog entry with
 `dch -v 0.3.0+linux2-0ppa1~ubuntu26.04.1 -D resolute`, or edit
@@ -285,41 +332,33 @@ revision and leave the distribution field at `resolute`;
 `make-source-package.sh` rewrites it on the fly when you build for another
 series, so the file in git stays the resolute one.
 
-## What was verified, and what was not
+## What CI checks
 
-Run on this machine (Arch, CachyOS):
+Every release build, and every dry run, proves the following without anyone
+remembering to:
 
-- A full `makepkg -f` build of the AUR package against a locally built source
-  tarball. `check()` passed, reporting 108 sensors. The resulting
-  `.pkg.tar.zst` has the layout above, the unit has its placeholders filled in,
-  and running the packaged `server.mjs --check` out of the extracted package
-  works.
-- `systemd-analyze verify --user` on the rendered unit.
-- `rpmbuild -bs` and a full `rpmbuild -bb` of the spec, including `%check`. The
-  binary RPM has the same payload as the Arch package. Local rpm lacks
-  `systemd-rpm-macros`, so the build needed
-  `--define "_userunitdir /usr/lib/systemd/user"` and the scriptlets stayed
-  unexpanded in the local artifact. The macro names were checked against
-  systemd's `macros.systemd.in`: `%systemd_user_post` runs `systemctl
-  --no-reload preset --global`, so the unit stays disabled unless a Fedora
-  preset says otherwise.
-- `dpkg-parsechangelog` on the changelog, which reads back version
-  `0.3.0+linux1-0ppa1~ubuntu26.04.1` for distribution `resolute`; both payload
-  targets of `debian/rules` run directly (they produce the same tree as the
-  other two packages); and `dpkg-source -b` producing a clean `3.0 (quilt)`
-  source package. The series rewrite in `make-source-package.sh` was run against
-  the changelog on its own and parses back as questing 25.10.
-- The AUR name check against the aurweb RPC, and the resolute nodejs version
-  against packages.ubuntu.com.
+- `makepkg` builds the Arch package in `archlinux:base-devel`, and its
+  `check()` runs `server.mjs --check`, which loads the gRPC contract from the
+  packaged path. A broken proto layout fails the release.
+- `rpmbuild` builds the RPM in `fedora:43` and `fedora:44`, `%check` runs the
+  same probe, and the job then asserts that the `%systemd_user_*` scriptlets
+  actually expanded. That last one matters because the maintainer's Arch box
+  has no `systemd-rpm-macros` and cannot expand them.
+- `dpkg-buildpackage` builds the deb in `ubuntu:26.04` through the real
+  debhelper sequence, and lintian runs over the result. Arch has no debhelper,
+  so before this existed the `dh` sequence had never run anywhere.
+- `make-dist.sh` refuses to build if the tag disagrees with `HELPER_VERSION`
+  and `package.json`.
 
-Not possible here, so hand-reviewed only:
+The four container builds run in parallel and finish in about a minute each.
 
-- The debhelper sequence. There is no debhelper, dpkg-buildpackage `-b` or
-  lintian on Arch and no container runtime on this machine, so `dh` was never
-  run. The `override_dh_auto_*` targets were run by hand instead. Watch the
-  first Launchpad build log.
-- `namcap` on the Arch package and `rpmlint` on the RPM. Neither is installed.
-- Any actual install. Nothing was installed, and the running
-  `shometrics-linux-helper.service` was left alone throughout.
-- COPR and Launchpad uploads. No credentials were used and nothing was pushed to
-  either service.
+Still not covered, and worth knowing:
+
+- `namcap` and `rpmlint` are not run anywhere yet.
+- Nothing installs the packages and starts the service. The Arch and Fedora
+  builds run the daemon's self-check, which is not the same as a real install.
+- Launchpad's own build of the source package. That is only visible after the
+  first upload.
+- lintian keeps two overridden findings, a missing man page and a file mode
+  inside a vendored dependency. Both reasons are written down in
+  `debian/sho-metrics-source-linux.lintian-overrides`.
