@@ -1,3 +1,4 @@
+import type { PropertyInspectorPlatform } from "../../inspector/platform";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { InspectorItem } from "../../components/InspectorItem";
 import type {
@@ -24,6 +25,7 @@ interface MetricSourceDiagnosticProps {
     readonly trace: DisplayedMetricReadTrace | undefined;
     /** Whether the current widget is a Windows CPU or GPU hardware summary. */
     readonly isWindowsHardwareSummary?: boolean;
+    readonly platform?: PropertyInspectorPlatform;
 }
 const RELATIVE_TIME_REFRESH_MILLISECONDS = 500;
 const DIAGNOSTICS_LAUNCH_RESPONSE_TIMEOUT_MILLISECONDS = 5_000;
@@ -59,6 +61,7 @@ const metricUnavailableTextByReason = {
 export function MetricSourceDiagnostic({
     trace,
     isWindowsHardwareSummary = false,
+    platform,
 }: MetricSourceDiagnosticProps): React.JSX.Element {
     const streamDeckClient = useStreamDeckClient();
     const { rich } = useI18n();
@@ -158,10 +161,16 @@ export function MetricSourceDiagnostic({
     const helperStatusText = trace?.routing?.preferredSourceId === WINDOWS_HELPER_SOURCE_ID
         ? formatHelperStatusText(trace)
         : undefined;
-    const canOpenHelperControlPanel = isWindowsHardwareSummary
-        || (
-            isWindowsHelperRelatedTrace(trace)
-            && trace?.preferredSourceStatus?.reason !== "helperNotInstalled"
+    // The ShoMetrics Control Panel is a Windows-only app; its launcher
+    // refuses on other platforms, so the button would be a dead end on the
+    // Linux fork.
+    const canOpenHelperControlPanel = platform !== "linux"
+        && (
+            isWindowsHardwareSummary
+            || (
+                isWindowsHelperRelatedTrace(trace)
+                && trace?.preferredSourceStatus?.reason !== "helperNotInstalled"
+            )
         );
     const sensorText = formatSensorText(trace);
     const metricStateText = formatMetricStateText(trace);

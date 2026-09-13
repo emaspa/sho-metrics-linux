@@ -77,7 +77,7 @@ function CpuMetricSettings({
         ? undefined
         : resolveHelperStatusGuidanceText(
             context.runtimeCache.displayedMetricReadTrace?.preferredSourceStatus,
-            { i18n, installSubject: "thisMetric" },
+            { i18n, installSubject: "thisMetric", platform: context.platform },
         );
 
     return (

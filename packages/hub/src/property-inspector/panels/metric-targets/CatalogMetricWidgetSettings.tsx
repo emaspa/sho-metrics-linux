@@ -91,6 +91,7 @@ function CatalogMetricPicker({
                 <CatalogMetricDescriptorStatusNote
                     status={context.runtimeCacheStatus.catalogMetricDescriptorStatus}
                     sourceStatus={context.runtimeCache.catalogMetricDescriptorSourceStatus}
+                    platform={context.platform}
                 />
             ) : (
                 <>
@@ -153,12 +154,14 @@ function CatalogMetricPicker({
 function CatalogMetricDescriptorStatusNote({
     sourceStatus,
     status,
+    platform,
 }: {
     sourceStatus: SourceClientStatus | undefined;
     status: "pending" | "ready" | "failed";
+    platform: CatalogMetricWidgetSettingsProps["context"]["platform"];
 }): React.JSX.Element {
     const i18n = useI18n();
-    const text = resolveCatalogMetricDescriptorStatusText(i18n, status, sourceStatus);
+    const text = resolveCatalogMetricDescriptorStatusText(i18n, status, sourceStatus, platform);
 
     return (
         <InspectorItem className="note-item note-item-caption">
@@ -171,11 +174,13 @@ function resolveCatalogMetricDescriptorStatusText(
     i18n: I18n,
     status: "pending" | "ready" | "failed",
     sourceStatus: SourceClientStatus | undefined,
+    platform: CatalogMetricWidgetSettingsProps["context"]["platform"],
 ): string {
     const { t } = i18n;
     const helperGuidance = resolveHelperStatusGuidanceText(sourceStatus, {
         i18n,
         installSubject: "catalogMetrics",
+        platform,
     });
     if (helperGuidance !== undefined) {
         return helperGuidance;

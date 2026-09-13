@@ -132,6 +132,7 @@ export function WidgetSettingsTab({
                         <MetricSourceDiagnostic
                             trace={context.runtimeCache.displayedMetricReadTrace}
                             isWindowsHardwareSummary={isWindowsHardwareSummary}
+                            platform={context.platform}
                         />
                     )}
                 </>

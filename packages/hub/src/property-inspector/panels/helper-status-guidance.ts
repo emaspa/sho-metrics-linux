@@ -1,10 +1,13 @@
 import { helperMessages } from "../../i18n/message-groups/widgets";
 import type { I18n } from "../../i18n/react";
 import type { SourceClientStatus } from "../../runtime/sources/source-client";
+import type { PropertyInspectorPlatform } from "../inspector/platform";
 
 interface HelperStatusGuidanceOptions {
     readonly i18n: I18n;
     readonly installSubject: "catalogMetrics" | "thisMetric";
+    /** Host platform; Linux gets guidance naming its own package and unit. */
+    readonly platform?: PropertyInspectorPlatform;
 }
 
 /**
@@ -21,18 +24,31 @@ export function resolveHelperStatusGuidanceText(
         return undefined;
     }
 
+    const isLinux = options.platform === "linux";
+
     switch (sourceStatus.reason) {
         case "helperNotInstalled":
-            return options.i18n.t(helperMessages.helperNotInstalledGuidance, {
-                subject: options.i18n.t(options.installSubject === "catalogMetrics"
-                    ? helperMessages.helperInstallCatalogMetrics
-                    : helperMessages.helperInstallThisMetric),
-            });
+            return options.i18n.t(
+                isLinux
+                    ? helperMessages.helperNotInstalledGuidanceLinux
+                    : helperMessages.helperNotInstalledGuidance,
+                {
+                    subject: options.i18n.t(options.installSubject === "catalogMetrics"
+                        ? helperMessages.helperInstallCatalogMetrics
+                        : helperMessages.helperInstallThisMetric),
+                },
+            );
         case "helperStopped":
-            return options.i18n.t(helperMessages.helperStoppedGuidance);
+            return options.i18n.t(isLinux
+                ? helperMessages.helperStoppedGuidanceLinux
+                : helperMessages.helperStoppedGuidance);
         case "protocolMismatch":
-            return options.i18n.t(helperMessages.helperProtocolMismatchGuidance);
+            return options.i18n.t(isLinux
+                ? helperMessages.helperProtocolMismatchGuidanceLinux
+                : helperMessages.helperProtocolMismatchGuidance);
         default:
-            return options.i18n.t(helperMessages.helperDiagnosticsGuidance);
+            return options.i18n.t(isLinux
+                ? helperMessages.helperDiagnosticsGuidanceLinux
+                : helperMessages.helperDiagnosticsGuidance);
     }
 }

@@ -340,6 +340,29 @@ export const helperMessages = {
         zh_CN: "打开 ShoMetrics Control Panel 查看 Helper 诊断。",
         ja: "Helper の診断には ShoMetrics Control Panel を開いてください。",
     },
+    // Linux variants: the Windows helper product, its Control Panel, and the
+    // shometrics.github.io installer do not exist there. The Linux helper is a
+    // distro package and a systemd user unit.
+    helperNotInstalledGuidanceLinux: {
+        en: "Install the sho-metrics-source-linux helper package to use {subject}.",
+        zh_CN: "安装 sho-metrics-source-linux 助手包以使用{subject}。",
+        ja: "sho-metrics-source-linux ヘルパーパッケージをインストールすると{subject}を使用できます。",
+    },
+    helperStoppedGuidanceLinux: {
+        en: "Start the helper: systemctl --user start shometrics-linux-helper.service",
+        zh_CN: "启动助手：systemctl --user start shometrics-linux-helper.service",
+        ja: "ヘルパーの起動：systemctl --user start shometrics-linux-helper.service",
+    },
+    helperProtocolMismatchGuidanceLinux: {
+        en: "Update sho-metrics-source-linux and the plugin to the latest versions.",
+        zh_CN: "请将 sho-metrics-source-linux 和插件更新到最新版本。",
+        ja: "sho-metrics-source-linux とプラグインを最新版に更新してください。",
+    },
+    helperDiagnosticsGuidanceLinux: {
+        en: "Check helper logs: journalctl --user -u shometrics-linux-helper",
+        zh_CN: "查看助手日志：journalctl --user -u shometrics-linux-helper",
+        ja: "ヘルパーのログ：journalctl --user -u shometrics-linux-helper",
+    },
     sourceHelperOnly: {
         en: "Source: Helper only",
         zh_CN: "来源：仅 Helper",

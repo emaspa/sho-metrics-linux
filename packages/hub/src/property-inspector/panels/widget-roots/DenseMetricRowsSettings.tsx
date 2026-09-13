@@ -352,6 +352,7 @@ function DenseMetricTargetSettings({
                     sourceStatus={context.runtimeCache.catalogMetricDescriptorSourceStatus}
                     metricId={target.metricId}
                     slotId={slotId}
+                    platform={context.platform}
                     onSettingsPatch={onSettingsPatch}
                 />
             );
@@ -642,6 +643,7 @@ function DenseCatalogMetricSettings({
     sourceStatus,
     metricId,
     slotId,
+    platform,
     onSettingsPatch,
 }: {
     readonly descriptors: readonly MetricDescriptor[];
@@ -649,6 +651,7 @@ function DenseCatalogMetricSettings({
     readonly sourceStatus: SourceClientStatus | undefined;
     readonly metricId: string;
     readonly slotId: string;
+    readonly platform: WidgetSettingsPanelProps["context"]["platform"];
     readonly onSettingsPatch: (patch: StoredWidgetSettingsPatch) => void;
 }): React.JSX.Element {
     const i18n = useI18n();
@@ -659,7 +662,7 @@ function DenseCatalogMetricSettings({
     if (descriptors.length === 0) {
         return (
             <InspectorItem className="note-item note-item-caption">
-                <p className="section-note">{resolveCatalogMetricDescriptorStatusText(i18n, descriptorStatus, sourceStatus)}</p>
+                <p className="section-note">{resolveCatalogMetricDescriptorStatusText(i18n, descriptorStatus, sourceStatus, platform)}</p>
             </InspectorItem>
         );
     }
@@ -855,11 +858,13 @@ function resolveCatalogMetricDescriptorStatusText(
     i18n: I18n,
     status: "pending" | "ready" | "failed",
     sourceStatus: SourceClientStatus | undefined,
+    platform: WidgetSettingsPanelProps["context"]["platform"],
 ): string {
     const { t } = i18n;
     const helperGuidance = resolveHelperStatusGuidanceText(sourceStatus, {
         i18n,
         installSubject: "catalogMetrics",
+        platform,
     });
     if (helperGuidance !== undefined) {
         return helperGuidance;
