@@ -24,7 +24,7 @@ import { existsSync, readFileSync } from "node:fs";
  * reads as a leaked feed URL rather than as the mistake it is.
  */
 
-const PRODUCTION_BUNDLE_PATH = "com.ez.sho-metrics.sdPlugin/bin/plugin.js";
+const PRODUCTION_BUNDLE_PATH = "com.ez.sho-metrics-linux.sdPlugin/bin/plugin.js";
 const PRODUCTION_APPCAST_URL = "https://shometrics.github.io/update/windows-appcast.xml";
 const APPCAST_URL_PATTERN = /https?:\/\/[^"'\s]*appcast[^"'\s]*/giu;
 

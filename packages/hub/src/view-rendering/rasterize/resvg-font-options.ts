@@ -479,7 +479,7 @@ function resolveBundledFontFile(fontDirectory: string, fontFileName: string): st
     const executableDirectory = path.dirname(process.argv[1] ?? process.cwd());
     const bundledFontFile = [
         path.resolve(process.cwd(), "assets", "fonts", fontDirectory, fontFileName),
-        path.resolve(process.cwd(), "com.ez.sho-metrics.sdPlugin", "assets", "fonts", fontDirectory, fontFileName),
+        path.resolve(process.cwd(), "com.ez.sho-metrics-linux.sdPlugin", "assets", "fonts", fontDirectory, fontFileName),
         path.resolve(executableDirectory, "..", "assets", "fonts", fontDirectory, fontFileName),
         path.resolve(executableDirectory, "..", "..", "assets", "fonts", fontDirectory, fontFileName),
     ].find(fontFile => existsSync(fontFile));

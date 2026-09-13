@@ -49,26 +49,26 @@ const roundedSvgTargets = [
 // Marketplace guidance requires white monochrome foreground on transparent
 // ground, with exact raster sizes for standard and high-DPI action lists.
 const streamDeckActionListPngTargets = [
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/actions/sho-metrics/icon.png"), size: 20 },
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/actions/sho-metrics/icon@2x.png"), size: 40 },
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/plugin/category-icon.png"), size: 28 },
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/plugin/category-icon@2x.png"), size: 56 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/actions/sho-metrics/icon.png"), size: 20 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/actions/sho-metrics/icon@2x.png"), size: 40 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/plugin/category-icon.png"), size: 28 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/plugin/category-icon@2x.png"), size: 56 },
 ];
 
 // Stream Deck key images are the on-device default action image. They keep the
 // full filled brand treatment because the monochrome action-list rule does not
 // apply to key state images.
 const fullPngTargets = [
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/actions/sho-metrics/key.png"), size: 72 },
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/actions/sho-metrics/key@2x.png"), size: 144 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/actions/sho-metrics/key.png"), size: 72 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/actions/sho-metrics/key@2x.png"), size: 144 },
 ];
 
 // The manifest-level plugin icon appears in Stream Deck preferences and
 // Marketplace surfaces. Elgato requires PNG at 256/512 px, but not monochrome,
 // so use the rounded filled app-icon variant.
 const streamDeckMarketplacePngTargets = [
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/plugin/marketplace.png"), size: 256 },
-    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics.sdPlugin/imgs/plugin/marketplace@2x.png"), size: 512 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/plugin/marketplace.png"), size: 256 },
+    { path: path.join(repoRoot, "packages/hub/com.ez.sho-metrics-linux.sdPlugin/imgs/plugin/marketplace@2x.png"), size: 512 },
 ];
 
 // Website favicons reuse the rounded squircle app icon so the browser tab,

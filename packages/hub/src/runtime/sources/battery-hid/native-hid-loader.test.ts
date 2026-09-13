@@ -92,7 +92,7 @@ test("node-hid staged native addon validation accepts expected binaries", async 
     try {
         execFileSync(process.execPath, [
             "scripts/packaging/node-hid-native-addons.mjs",
-            join(temporaryDirectory, "com.ez.sho-metrics.sdPlugin"),
+            join(temporaryDirectory, "com.ez.sho-metrics-linux.sdPlugin"),
             TEST_NODE_HID_NATIVE_ADDON_TARGET,
         ], { cwd: process.cwd(), stdio: "pipe" });
     } finally {
@@ -106,7 +106,7 @@ test("node-hid staged native addon validation rejects unexpected binaries", asyn
     try {
         const unexpectedNativeAddonPath = join(
             temporaryDirectory,
-            "com.ez.sho-metrics.sdPlugin",
+            "com.ez.sho-metrics-linux.sdPlugin",
             "bin",
             "node_modules",
             "node-hid",
@@ -118,7 +118,7 @@ test("node-hid staged native addon validation rejects unexpected binaries", asyn
         assert.throws(
             () => execFileSync(process.execPath, [
                 "scripts/packaging/node-hid-native-addons.mjs",
-                join(temporaryDirectory, "com.ez.sho-metrics.sdPlugin"),
+                join(temporaryDirectory, "com.ez.sho-metrics-linux.sdPlugin"),
                 TEST_NODE_HID_NATIVE_ADDON_TARGET,
             ], { cwd: process.cwd(), stdio: "pipe" }),
             /Unexpected staged node-hid native addon/u,
@@ -135,7 +135,7 @@ test("node-hid native addon target validation rejects Object prototype names", a
         assert.throws(
             () => execFileSync(process.execPath, [
                 "scripts/packaging/node-hid-native-addons.mjs",
-                join(temporaryDirectory, "com.ez.sho-metrics.sdPlugin"),
+                join(temporaryDirectory, "com.ez.sho-metrics-linux.sdPlugin"),
                 "toString",
             ], { cwd: process.cwd(), stdio: "pipe" }),
             /Unsupported node-hid native addon target/u,
@@ -170,7 +170,7 @@ test("node-hid staged native addon validation rejects changed hashes", async () 
         await writeFile(
             join(
                 temporaryDirectory,
-                "com.ez.sho-metrics.sdPlugin",
+                "com.ez.sho-metrics-linux.sdPlugin",
                 "bin",
                 "node_modules",
                 "node-hid",
@@ -182,7 +182,7 @@ test("node-hid staged native addon validation rejects changed hashes", async () 
         assert.throws(
             () => execFileSync(process.execPath, [
                 "scripts/packaging/node-hid-native-addons.mjs",
-                join(temporaryDirectory, "com.ez.sho-metrics.sdPlugin"),
+                join(temporaryDirectory, "com.ez.sho-metrics-linux.sdPlugin"),
                 TEST_NODE_HID_NATIVE_ADDON_TARGET,
             ], { cwd: process.cwd(), stdio: "pipe" }),
             /Unexpected SHA-256/u,
@@ -196,7 +196,7 @@ async function createStagedNodeHidFixture(): Promise<string> {
     const temporaryDirectory = await mkdtemp(join(tmpdir(), "sho-metrics-node-hid-test-"));
     const stagedNodeHidDirectory = join(
         temporaryDirectory,
-        "com.ez.sho-metrics.sdPlugin",
+        "com.ez.sho-metrics-linux.sdPlugin",
         "bin",
         "node_modules",
         "node-hid",

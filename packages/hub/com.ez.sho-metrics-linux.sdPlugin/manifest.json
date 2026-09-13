@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
-	"Name": "Sho Metrics - System Monitoring",
+	"Name": "Sho Metrics Linux - System Monitoring",
 	"Version": "0.3.0.0",
 	"Author": "ez",
 	"Actions": [
 		{
 			"Name": "CPU",
-			"UUID": "com.ez.sho-metrics.cpu",
+			"UUID": "com.ez.sho-metrics-linux.cpu",
 			"Icon": "imgs/actions/cpu/icon",
 			"Tooltip": "Displays CPU metrics.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -31,7 +31,7 @@
 		},
 		{
 			"Name": "GPU",
-			"UUID": "com.ez.sho-metrics.gpu",
+			"UUID": "com.ez.sho-metrics-linux.gpu",
 			"Icon": "imgs/actions/gpu/icon",
 			"Tooltip": "Displays GPU metrics.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -56,7 +56,7 @@
 		},
 		{
 			"Name": "Memory",
-			"UUID": "com.ez.sho-metrics.memory",
+			"UUID": "com.ez.sho-metrics-linux.memory",
 			"Icon": "imgs/actions/memory/icon",
 			"Tooltip": "Displays memory metrics.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -81,7 +81,7 @@
 		},
 		{
 			"Name": "Disk",
-			"UUID": "com.ez.sho-metrics.disk",
+			"UUID": "com.ez.sho-metrics-linux.disk",
 			"Icon": "imgs/actions/disk/icon",
 			"Tooltip": "Displays disk metrics.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -106,7 +106,7 @@
 		},
 		{
 			"Name": "Network",
-			"UUID": "com.ez.sho-metrics.network",
+			"UUID": "com.ez.sho-metrics-linux.network",
 			"Icon": "imgs/actions/network/icon",
 			"Tooltip": "Displays network metrics.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -131,7 +131,7 @@
 		},
 		{
 			"Name": "System & Battery",
-			"UUID": "com.ez.sho-metrics.system",
+			"UUID": "com.ez.sho-metrics-linux.system",
 			"Icon": "imgs/actions/system/icon",
 			"Tooltip": "Displays system and supported device battery metrics.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -156,7 +156,7 @@
 		},
 		{
 			"Name": "Advanced Sensor",
-			"UUID": "com.ez.sho-metrics.catalog-metric",
+			"UUID": "com.ez.sho-metrics-linux.catalog-metric",
 			"Icon": "imgs/actions/catalog-metric/icon",
 			"Tooltip": "Displays one selected metric, such as LibreHardwareMonitor data.",
 			"OS": [
@@ -184,7 +184,7 @@
 		},
 		{
 			"Name": "Custom Metric",
-			"UUID": "com.ez.sho-metrics.custom-metric",
+			"UUID": "com.ez.sho-metrics-linux.custom-metric",
 			"Icon": "imgs/actions/custom-metric/icon",
 			"Tooltip": "Displays a metric from a custom source, such as HTTP JSON.",
 			"SupportURL": "https://shometrics.github.io/faq/custom-http-metric/",
@@ -210,7 +210,7 @@
 		},
 		{
 			"Name": "Dense Multi Metric",
-			"UUID": "com.ez.sho-metrics.dense-multi-metric",
+			"UUID": "com.ez.sho-metrics-linux.dense-multi-metric",
 			"Icon": "imgs/actions/dense-multi-metric/icon",
 			"Tooltip": "Displays multiple metrics in one compact view.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -235,7 +235,7 @@
 		},
 		{
 			"Name": "Stacked Metric",
-			"UUID": "com.ez.sho-metrics.stacked-metric",
+			"UUID": "com.ez.sho-metrics-linux.stacked-metric",
 			"Icon": "imgs/actions/stacked-metric/icon",
 			"Tooltip": "Rotates between multiple metric widgets on one key.",
 			"PropertyInspectorPath": "ui/property-inspector.html",
@@ -263,7 +263,7 @@
 			]
 		}
 	],
-	"Category": "Sho Metrics - System Monitoring",
+	"Category": "Sho Metrics Linux - System Monitoring",
 	"CategoryIcon": "imgs/plugin/category-icon",
 	"CodePath": "bin/plugin.js",
 	"Description": "Display live System metrics such as CPU, GPU, memory, disk, network, battery, sensor metrics, and HTTP metrics.",
@@ -288,5 +288,5 @@
 		"Version": "24",
 		"Debug": "enabled"
 	},
-	"UUID": "com.ez.sho-metrics"
+	"UUID": "com.ez.sho-metrics-linux"
 }

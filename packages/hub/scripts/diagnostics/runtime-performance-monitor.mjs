@@ -12,9 +12,9 @@ const hubRoot = path.resolve(scriptDirectory, "..", "..");
 const repositoryRoot = path.resolve(hubRoot, "..", "..");
 const defaultLogPath = path.join(
     hubRoot,
-    "com.ez.sho-metrics.sdPlugin",
+    "com.ez.sho-metrics-linux.sdPlugin",
     "logs",
-    "com.ez.sho-metrics.0.log",
+    "com.ez.sho-metrics-linux.0.log",
 );
 const defaultOutputDirectory = path.join(repositoryRoot, "docs", "development", "perf-logs");
 const defaultWarmupSamples = 5;

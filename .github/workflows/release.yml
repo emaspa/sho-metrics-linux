@@ -196,7 +196,7 @@ jobs:
           publish_dir="release-assets/publish"
           mkdir -p "${publish_dir}"
 
-          plugin_package="$(find release-artifacts -type f -name "com.ez.sho-metrics.streamDeckPlugin" -print -quit)"
+          plugin_package="$(find release-artifacts -type f -name "com.ez.sho-metrics-linux.streamDeckPlugin" -print -quit)"
           if [[ ! -f "${plugin_package}" ]]; then
             echo "Expected Stream Deck plugin package was not found." >&2
             find release-artifacts -type f >&2

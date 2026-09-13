@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 const scriptDirectoryPath = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRootPath = path.resolve(scriptDirectoryPath, "../..");
-const manifestRelativePath = "packages/hub/com.ez.sho-metrics.sdPlugin/manifest.json";
+const manifestRelativePath = "packages/hub/com.ez.sho-metrics-linux.sdPlugin/manifest.json";
 const workflowsRelativeDirectory = ".github/workflows";
 const runtimeDocumentationReferenceList = [
     {

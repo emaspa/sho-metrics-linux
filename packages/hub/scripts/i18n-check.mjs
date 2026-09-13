@@ -27,7 +27,7 @@ import {
 } from "../src/i18n/manifest-localization.ts";
 import { manifestMessages } from "../src/i18n/manifest-messages.ts";
 
-const pluginDirectory = "com.ez.sho-metrics.sdPlugin";
+const pluginDirectory = "com.ez.sho-metrics-linux.sdPlugin";
 const manifestPath = join(pluginDirectory, "manifest.json");
 const locales = ["en", "zh_CN", "ja"];
 

@@ -21,7 +21,7 @@ afterEach(() => {
 
 test("Helper-backed metric diagnostics open the installed diagnostics window", async () => {
     const user = userEvent.setup();
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(
         <StreamDeckClientProvider client={client}>
@@ -39,7 +39,7 @@ test("Helper-backed metric diagnostics open the installed diagnostics window", a
 
 test("Helper diagnostics stay visible outside debug details and report launch failures in place", async () => {
     const user = userEvent.setup();
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(
         <StreamDeckClientProvider client={client}>
@@ -68,7 +68,7 @@ test("Helper diagnostics stay visible outside debug details and report launch fa
 
 test("the diagnostics button keeps showing progress until the panel window can appear", async () => {
     vi.useFakeTimers();
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(
         <StreamDeckClientProvider client={client}>
@@ -98,7 +98,7 @@ test("the diagnostics button keeps showing progress until the panel window can a
 });
 
 test("non-Helper metric diagnostics do not offer the diagnostics window", () => {
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(
         <StreamDeckClientProvider client={client}>
@@ -116,7 +116,7 @@ test("non-Helper metric diagnostics do not offer the diagnostics window", () => 
 });
 
 test("Windows hardware summary diagnostics remain available when the primary trace uses Node", () => {
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(
         <StreamDeckClientProvider client={client}>
@@ -138,7 +138,7 @@ test("Windows hardware summary diagnostics remain available when the primary tra
 });
 
 test("Windows hardware summary diagnostics remain available when Helper is not installed", () => {
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(
         <StreamDeckClientProvider client={client}>

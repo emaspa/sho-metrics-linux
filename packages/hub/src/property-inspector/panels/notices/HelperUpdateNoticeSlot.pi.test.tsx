@@ -40,7 +40,7 @@ test("demands action for a required update", () => {
 
 test("opens the download page rather than a link taken from the feed", async () => {
     const user = userEvent.setup();
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(
         <StreamDeckClientProvider client={client}>
@@ -74,7 +74,7 @@ test("places the update link where each language needs it", () => {
 });
 
 function renderNotice(notice: HelperUpdateNotice, locale: HubLocale = "en") {
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     return render(
         <StreamDeckClientProvider client={client}>

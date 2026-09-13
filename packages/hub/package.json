@@ -30,7 +30,7 @@
         "i18n:generate": "node scripts/i18n-generate.mjs",
         "i18n:check": "node scripts/i18n-check.mjs",
         "generate:lucide-icons": "node scripts/generate-lucide-icon-index.mjs",
-        "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.ez.sho-metrics\"",
+        "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.ez.sho-metrics-linux\"",
         "prelint": "npm run generate:proto && npm run generate:lucide-icons",
         "lint": "eslint .",
         "prelint:fix": "npm run generate:proto && npm run generate:lucide-icons",

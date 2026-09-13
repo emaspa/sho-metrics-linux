@@ -56,14 +56,14 @@ body:
         Useful logs:
 
         Windows:
-        - ShoMetrics plugin log: `%APPDATA%\Elgato\StreamDeck\Plugins\com.ez.sho-metrics.sdPlugin\logs\com.ez.sho-metrics*.log`
+        - ShoMetrics plugin log: `%APPDATA%\Elgato\StreamDeck\Plugins\com.ez.sho-metrics-linux.sdPlugin\logs\com.ez.sho-metrics-linux*.log`
         - Stream Deck host log: `%APPDATA%\Elgato\StreamDeck\logs\StreamDeck*.log`
-        - Additional ShoMetrics plugin log, if present: `%APPDATA%\Elgato\StreamDeck\logs\com.ez.sho-metrics*.log`
+        - Additional ShoMetrics plugin log, if present: `%APPDATA%\Elgato\StreamDeck\logs\com.ez.sho-metrics-linux*.log`
         - Only if you installed the helper: `%ProgramData%\ShoMetrics\logs\shometrics-helper*.log`
         - Only if you installed the helper: `%LOCALAPPDATA%\ShoMetrics\ControlPanel\logs\shometrics-control-panel-startup.log`
 
         macOS:
-        - ShoMetrics plugin log: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.ez.sho-metrics.sdPlugin/logs/com.ez.sho-metrics.*.log`
+        - ShoMetrics plugin log: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.ez.sho-metrics-linux.sdPlugin/logs/com.ez.sho-metrics-linux.*.log`
         - Stream Deck host log: `~/Library/Logs/ElgatoStreamDeck/`
 
   - type: textarea

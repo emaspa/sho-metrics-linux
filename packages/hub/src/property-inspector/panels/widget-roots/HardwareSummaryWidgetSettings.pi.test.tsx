@@ -153,7 +153,7 @@ test("hardware summary keeps widget polling controls", () => {
 
 test("CPU hardware summary opens helper download guidance in the default browser", async () => {
     const user = userEvent.setup();
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
 
     render(<HardwareSummarySettingsHarness
         actionKind="cpu"
@@ -201,7 +201,7 @@ test("hardware summary advanced controls render current metric trace and diagnos
 
 test("GPU hardware summary opens helper download guidance in the default browser", async () => {
     const user = userEvent.setup();
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.gpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.gpu" });
 
     render(<HardwareSummarySettingsHarness
         actionKind="gpu"
@@ -262,7 +262,7 @@ test("GPU hardware summary hides runtime guidance when values are available", ()
 
 function HardwareSummarySettingsHarness({
     actionKind,
-    client = new TestPropertyInspectorClient({ actionUuid: `com.ez.sho-metrics.${actionKind}` }),
+    client = new TestPropertyInspectorClient({ actionUuid: `com.ez.sho-metrics-linux.${actionKind}` }),
     platform = "win32",
     settings: initialSettings,
     runtimeCache,

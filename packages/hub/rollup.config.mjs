@@ -8,7 +8,7 @@ import path from "node:path";
 import url from "node:url";
 
 const isWatching = !!process.env.ROLLUP_WATCH;
-const sdPlugin = "com.ez.sho-metrics.sdPlugin";
+const sdPlugin = "com.ez.sho-metrics-linux.sdPlugin";
 const buildMode = normalizeBuildMode(process.env.SHO_METRICS_BUILD_MODE ?? (isWatching ? "development" : "production"));
 const devLocaleOverride = normalizeDevLocaleOverride(process.env.SHO_METRICS_DEV_LOCALE_OVERRIDE);
 const devLocaleOverrideLiteral = devLocaleOverride === undefined ? "undefined" : JSON.stringify(devLocaleOverride);

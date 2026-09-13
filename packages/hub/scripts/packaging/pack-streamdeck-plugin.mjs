@@ -21,7 +21,7 @@ import {
     stageNodeHidRuntimeDependency,
 } from "./node-hid-native-addons.mjs";
 
-const PLUGIN_DIRECTORY_NAME = "com.ez.sho-metrics.sdPlugin";
+const PLUGIN_DIRECTORY_NAME = "com.ez.sho-metrics-linux.sdPlugin";
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
 const packageDirectory = join(scriptDirectory, "..", "..");
@@ -31,7 +31,7 @@ const outputDirectory = join(repositoryDirectory, "artifacts", "hub", "streamdec
 const stagingRootDirectory = join(outputDirectory, "staging");
 const stagingPluginDirectory = join(stagingRootDirectory, PLUGIN_DIRECTORY_NAME);
 const packageOutputDirectory = join(outputDirectory, "package");
-const legacyPackagePath = join(outputDirectory, "com.ez.sho-metrics.streamDeckPlugin");
+const legacyPackagePath = join(outputDirectory, "com.ez.sho-metrics-linux.streamDeckPlugin");
 const streamdeckCliPath = join(packageDirectory, "node_modules", "@elgato", "cli", "bin", "streamdeck.mjs");
 const packageJsonPath = join(packageDirectory, "package.json");
 const packageLockPath = join(packageDirectory, "package-lock.json");

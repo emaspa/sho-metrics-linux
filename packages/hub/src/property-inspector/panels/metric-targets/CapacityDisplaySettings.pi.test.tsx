@@ -177,7 +177,7 @@ function DisplaySettingsHarness({
 }): React.JSX.Element {
     const [settings, setSettings] = useState(initialSettings);
     const client = new TestPropertyInspectorClient({
-        actionUuid: `com.ez.sho-metrics.${actionKind}`,
+        actionUuid: `com.ez.sho-metrics-linux.${actionKind}`,
     });
 
     return (

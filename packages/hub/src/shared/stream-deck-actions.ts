@@ -11,7 +11,7 @@ export type ActionKind =
     | "system"
     | "unknown";
 
-export const STREAM_DECK_PLUGIN_UUID = "com.ez.sho-metrics";
+export const STREAM_DECK_PLUGIN_UUID = "com.ez.sho-metrics-linux";
 export const STREAM_DECK_STACKED_METRIC_ACTION_UUID = `${STREAM_DECK_PLUGIN_UUID}.stacked-metric`;
 
 type StreamDeckActionKind = Exclude<ActionKind, "unknown">;

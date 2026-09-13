@@ -3,9 +3,9 @@ import type { ManifestMessagesCatalog } from "./manifest-localization";
 export const manifestMessages = {
     root: {
         name: {
-            en: "Sho Metrics - System Monitoring",
-            zh_CN: "Sho Metrics - System Monitoring",
-            ja: "Sho Metrics - System Monitoring",
+            en: "Sho Metrics Linux - System Monitoring",
+            zh_CN: "Sho Metrics Linux - System Monitoring",
+            ja: "Sho Metrics Linux - System Monitoring",
         },
         description: {
             en: "Display live System metrics such as CPU, GPU, memory, disk, network, battery, sensor metrics, and HTTP metrics.",
@@ -14,7 +14,7 @@ export const manifestMessages = {
         },
     },
     actions: {
-        "com.ez.sho-metrics.cpu": {
+        "com.ez.sho-metrics-linux.cpu": {
             name: {
                 en: "CPU",
                 zh_CN: "CPU",
@@ -26,7 +26,7 @@ export const manifestMessages = {
                 ja: "CPU メトリクスを表示します。",
             },
         },
-        "com.ez.sho-metrics.gpu": {
+        "com.ez.sho-metrics-linux.gpu": {
             name: {
                 en: "GPU",
                 zh_CN: "GPU",
@@ -38,7 +38,7 @@ export const manifestMessages = {
                 ja: "GPU メトリクスを表示します。",
             },
         },
-        "com.ez.sho-metrics.memory": {
+        "com.ez.sho-metrics-linux.memory": {
             name: {
                 en: "Memory",
                 zh_CN: "内存",
@@ -50,7 +50,7 @@ export const manifestMessages = {
                 ja: "メモリメトリクスを表示します。",
             },
         },
-        "com.ez.sho-metrics.disk": {
+        "com.ez.sho-metrics-linux.disk": {
             name: {
                 en: "Disk",
                 zh_CN: "磁盘",
@@ -62,7 +62,7 @@ export const manifestMessages = {
                 ja: "ディスクメトリクスを表示します。",
             },
         },
-        "com.ez.sho-metrics.network": {
+        "com.ez.sho-metrics-linux.network": {
             name: {
                 en: "Network",
                 zh_CN: "网络",
@@ -74,7 +74,7 @@ export const manifestMessages = {
                 ja: "ネットワークメトリクスを表示します。",
             },
         },
-        "com.ez.sho-metrics.system": {
+        "com.ez.sho-metrics-linux.system": {
             name: {
                 en: "System & Battery",
                 zh_CN: "系统与电池",
@@ -86,7 +86,7 @@ export const manifestMessages = {
                 ja: "システムと対応デバイスのバッテリーメトリクスを表示します。",
             },
         },
-        "com.ez.sho-metrics.catalog-metric": {
+        "com.ez.sho-metrics-linux.catalog-metric": {
             name: {
                 en: "Advanced Sensor",
                 zh_CN: "高级传感器",
@@ -98,7 +98,7 @@ export const manifestMessages = {
                 ja: "LibreHardwareMonitor データなど、選択したメトリクスを 1 つ表示します。",
             },
         },
-        "com.ez.sho-metrics.custom-metric": {
+        "com.ez.sho-metrics-linux.custom-metric": {
             name: {
                 en: "Custom Metric",
                 zh_CN: "自定义指标",
@@ -110,7 +110,7 @@ export const manifestMessages = {
                 ja: "HTTP JSON など、カスタムソースのメトリクスを表示します。",
             },
         },
-        "com.ez.sho-metrics.dense-multi-metric": {
+        "com.ez.sho-metrics-linux.dense-multi-metric": {
             name: {
                 en: "Dense Multi Metric",
                 zh_CN: "密集多指标",
@@ -122,7 +122,7 @@ export const manifestMessages = {
                 ja: "複数のメトリクスを 1 つのコンパクトな表示にまとめます。",
             },
         },
-        "com.ez.sho-metrics.stacked-metric": {
+        "com.ez.sho-metrics-linux.stacked-metric": {
             name: {
                 en: "Stacked Metric",
                 zh_CN: "堆叠指标",

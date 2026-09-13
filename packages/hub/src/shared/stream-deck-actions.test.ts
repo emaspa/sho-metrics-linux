@@ -9,7 +9,7 @@ import {
     STREAM_DECK_PLUGIN_UUID,
 } from "./stream-deck-actions";
 
-const SD_PLUGIN_ROOT = "com.ez.sho-metrics.sdPlugin";
+const SD_PLUGIN_ROOT = "com.ez.sho-metrics-linux.sdPlugin";
 
 interface StreamDeckManifest {
     UUID?: string;
@@ -160,7 +160,7 @@ test("old reading-level action names do not remain in source or manifest files",
     ];
     const scannedFiles = [
         ...findTextFiles("src"),
-        "com.ez.sho-metrics.sdPlugin/manifest.json",
+        "com.ez.sho-metrics-linux.sdPlugin/manifest.json",
     ].filter(filePath => !filePath.endsWith("stream-deck-actions.test.ts"));
     const matches = scannedFiles.flatMap((filePath) => {
         const fileText = readFileSync(filePath, "utf8");

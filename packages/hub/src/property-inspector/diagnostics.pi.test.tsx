@@ -6,7 +6,7 @@ import { PropertyInspectorErrorBoundary } from "./diagnostics";
 import { TestPropertyInspectorClient } from "./testing/test-property-inspector-client";
 
 test("property inspector error boundary reports redacted render failures", async () => {
-    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics.cpu" });
+    const client = new TestPropertyInspectorClient({ actionUuid: "com.ez.sho-metrics-linux.cpu" });
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     try {
