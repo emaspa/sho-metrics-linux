@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 # Assembles and signs the Debian source package for a PPA upload.
 #
-#   ./make-source-package.sh 0.3.0-linux.1                # resolute, 26.04 LTS
-#   ./make-source-package.sh 0.3.0-linux.1 questing 25.10 # another series
+#   ./make-source-package.sh 0.3.0-linux.2                # resolute, 26.04 LTS
+#   ./make-source-package.sh 0.3.0-linux.2 questing 25.10 # another series
 #
 # Run this on Ubuntu (or in a container of the target series). It needs dpkg-dev,
 # debhelper and devscripts, plus the GPG key Launchpad knows about. Run
 # ../make-dist.sh first: this script consumes packaging/dist/*.orig.tar.gz.
+#
+# DPKG_FLAGS overrides what dpkg-buildpackage is told to do. The default builds
+# a signed source package, which is what Launchpad accepts. CI sets
+# DPKG_FLAGS="-b -us -uc" to build an unsigned binary .deb instead.
 set -euo pipefail
 
 forkver="${1:-}"
 series="${2:-resolute}"
 ubuntuver="${3:-26.04}"
 if [[ -z ${forkver} ]]; then
-    echo "usage: $0 <fork version, e.g. 0.3.0-linux.1> [series] [ubuntu version]" >&2
+    echo "usage: $0 <fork version, e.g. 0.3.0-linux.2> [series] [ubuntu version]" >&2
     exit 1
 fi
 
@@ -48,8 +52,9 @@ fi
 
 cd "${work}/${name}-${debver}"
 head -1 debian/changelog
-dpkg-buildpackage -S -sa
+read -r -a dpkg_flags <<< "${DPKG_FLAGS:--S -sa}"
+dpkg-buildpackage "${dpkg_flags[@]}"
 
 echo
 echo "Built in ${work}:"
-ls "${work}"/*.dsc "${work}"/*_source.changes
+find "${work}" -maxdepth 1 -type f \( -name "*.dsc" -o -name "*.changes" -o -name "*.deb" -o -name "*.tar.*" \) -printf "%12s  %f\n" | sort -k2

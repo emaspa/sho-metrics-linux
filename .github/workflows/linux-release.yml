@@ -101,6 +101,209 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+  build-helper-source:
+    name: Build helper source tarballs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - validate
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Build source and vendor tarballs
+        shell: bash
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          packages/source-linux/packaging/make-dist.sh "${TAG_NAME#v}"
+
+      - name: Upload helper source tarballs
+        uses: actions/upload-artifact@v7
+        with:
+          name: shometrics-linux-helper-source
+          path: packages/source-linux/packaging/dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 3
+
+  build-helper-arch:
+    name: Build helper package (Arch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - build-helper-source
+    container: archlinux:base-devel
+    steps:
+      - name: Install build tooling
+        shell: bash
+        run: pacman -Syu --noconfirm --needed git nodejs npm pacman-contrib
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download helper source tarballs
+        uses: actions/download-artifact@v8
+        with:
+          name: shometrics-linux-helper-source
+          path: dist
+
+      - name: Build package
+        shell: bash
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          forkver="${TAG_NAME#v}"
+
+          # makepkg refuses to run as root, so the build happens as an unprivileged
+          # user. The PKGBUILD's source points at the release asset, which does not
+          # exist yet during the release run, so it is pointed at the tarball this
+          # run just built instead.
+          useradd -m builder
+          install -d -o builder -g builder /home/builder/build
+          cp packages/source-linux/packaging/aur/PKGBUILD \
+             packages/source-linux/packaging/aur/sho-metrics-source-linux.install \
+             "dist/sho-metrics-source-linux-${forkver}.tar.gz" \
+             /home/builder/build/
+          chown -R builder:builder /home/builder/build
+
+          sudo -u builder bash -euo pipefail -c '
+            cd /home/builder/build
+            sed -i "s|^source=.*|source=(\"\${pkgname}-\${_forkver}.tar.gz\")|" PKGBUILD
+            updpkgsums
+            makepkg -f --noconfirm
+          '
+          cp /home/builder/build/*.pkg.tar.zst .
+
+      - name: Upload Arch package
+        uses: actions/upload-artifact@v7
+        with:
+          name: shometrics-linux-helper-arch
+          path: "*.pkg.tar.zst"
+          if-no-files-found: error
+          retention-days: 3
+
+  build-helper-fedora:
+    name: Build helper package (Fedora ${{ matrix.release }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - build-helper-source
+    strategy:
+      fail-fast: false
+      matrix:
+        release: [43, 44]
+    container: fedora:${{ matrix.release }}
+    steps:
+      - name: Install build tooling
+        shell: bash
+        run: dnf install -y --setopt=install_weak_deps=False git rpm-build rpmdevtools systemd-rpm-macros nodejs
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download helper source tarballs
+        uses: actions/download-artifact@v8
+        with:
+          name: shometrics-linux-helper-source
+          path: dist
+
+      - name: Build package
+        shell: bash
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          forkver="${TAG_NAME#v}"
+
+          rpmdev-setuptree
+          cp "dist/sho-metrics-source-linux-${forkver}.tar.gz" \
+             "dist/sho-metrics-source-linux-${forkver}-node-modules.tar.gz" \
+             ~/rpmbuild/SOURCES/
+          rpmbuild -bb packages/source-linux/packaging/rpm/sho-metrics-source-linux.spec
+          find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} . \;
+
+          # The scriptlets only expand where systemd-rpm-macros exists, which is
+          # here and not on the maintainer's Arch box, so check them.
+          rpm -qp --scripts ./*.noarch.rpm
+          if rpm -qp --scripts ./*.noarch.rpm | grep -q "%systemd"; then
+            echo "systemd macros did not expand" >&2
+            exit 1
+          fi
+
+      - name: Upload Fedora package
+        uses: actions/upload-artifact@v7
+        with:
+          name: shometrics-linux-helper-fedora-${{ matrix.release }}
+          path: "*.rpm"
+          if-no-files-found: error
+          retention-days: 3
+
+  build-helper-ubuntu:
+    name: Build helper package (Ubuntu 26.04)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - build-helper-source
+    container: ubuntu:26.04
+    steps:
+      - name: Install build tooling
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git ca-certificates build-essential debhelper dpkg-dev fakeroot lintian
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download helper source tarballs
+        uses: actions/download-artifact@v8
+        with:
+          name: shometrics-linux-helper-source
+          path: packages/source-linux/packaging/dist
+
+      - name: Build package
+        shell: bash
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+          DPKG_FLAGS: "-b -us -uc"
+        run: |
+          set -euo pipefail
+          packages/source-linux/packaging/debian/make-source-package.sh "${TAG_NAME#v}"
+          find packages/source-linux/packaging/dist -name "*.deb" -exec cp {} . \;
+          ls -l ./*.deb
+
+      - name: Run lintian
+        shell: bash
+        continue-on-error: true
+        run: lintian --info --display-info ./*.deb
+
+      - name: Upload Ubuntu package
+        uses: actions/upload-artifact@v7
+        with:
+          name: shometrics-linux-helper-ubuntu
+          path: "*.deb"
+          if-no-files-found: error
+          retention-days: 3
+
   publish:
     name: Create GitHub Release
     runs-on: ubuntu-latest
@@ -108,6 +311,10 @@ jobs:
     needs:
       - validate
       - build-plugin
+      - build-helper-source
+      - build-helper-arch
+      - build-helper-fedora
+      - build-helper-ubuntu
     permissions:
       contents: write
     steps:
@@ -141,12 +348,65 @@ jobs:
 
           cp "${plugin_package}" "${publish_dir}/ShoMetrics-Linux.streamDeckPlugin"
 
+          # Helper daemon packages. GitHub rewrites characters outside
+          # [A-Za-z0-9._-] in asset names, so the RPM's "^" and the deb's "+~"
+          # are normalised here to the fork version instead of being mangled on
+          # upload. The package metadata inside each file is untouched.
+          forkver="${TAG_NAME#v}"
+          helper="sho-metrics-source-linux"
+
+          for tarball in "${helper}-${forkver}.tar.gz" "${helper}-${forkver}-node-modules.tar.gz"; do
+            found="$(find release-artifacts -type f -name "${tarball}" -print -quit)"
+            if [[ ! -f "${found}" ]]; then
+              echo "Missing helper tarball: ${tarball}" >&2
+              exit 1
+            fi
+            cp "${found}" "${publish_dir}/${tarball}"
+          done
+
+          arch_package="$(find release-artifacts -type f -name "*.pkg.tar.zst" -print -quit)"
+          if [[ ! -f "${arch_package}" ]]; then
+            echo "Missing Arch helper package." >&2
+            exit 1
+          fi
+          cp "${arch_package}" "${publish_dir}/${helper}-${forkver}-1-any.pkg.tar.zst"
+
+          while IFS= read -r rpm_package; do
+            dist_tag="$(basename "${rpm_package}" | grep -o "fc[0-9]\+")"
+            cp "${rpm_package}" "${publish_dir}/${helper}-${forkver}-1.${dist_tag}.noarch.rpm"
+          done < <(find release-artifacts -type f -name "*.noarch.rpm" | sort)
+          if ! compgen -G "${publish_dir}/*.noarch.rpm" > /dev/null; then
+            echo "Missing Fedora helper packages." >&2
+            exit 1
+          fi
+
+          deb_package="$(find release-artifacts -type f -name "*.deb" -print -quit)"
+          if [[ ! -f "${deb_package}" ]]; then
+            echo "Missing Ubuntu helper package." >&2
+            exit 1
+          fi
+          cp "${deb_package}" "${publish_dir}/${helper}_${forkver}_all.deb"
+
           {
             echo "Sho Metrics Linux plugin ${PLUGIN_VERSION} (${TAG_NAME}), built from the \`linux\` branch for [OpenDeck](https://github.com/nekename/OpenDeck)."
             echo
             echo "Install through OpenDeck's plugin manager or unzip into \`~/.config/opendeck/plugins/\`, then restart OpenDeck."
             echo
-            echo "Deep sensors (hwmon, NVIDIA via LACT, MangoHud FPS) need the helper daemon: run \`packages/source-linux/install.sh\` from this tag, see its [README](https://github.com/emaspa/sho-metrics-linux/tree/${TAG_NAME}/packages/source-linux)."
+            echo "Deep sensors (hwmon, NVIDIA via LACT, MangoHud FPS) need the helper daemon. Install it from your distro package below, or run \`packages/source-linux/install.sh\` from this tag. See its [README](https://github.com/emaspa/sho-metrics-linux/tree/${TAG_NAME}/packages/source-linux)."
+            echo
+            echo "### Helper daemon packages"
+            echo
+            echo "Built from this tag, same payload in each: the daemon, its gRPC contract, vendored Node dependencies, and a systemd user unit."
+            echo
+            echo "| File | For |"
+            echo "| --- | --- |"
+            echo "| \`sho-metrics-source-linux-${TAG_NAME#v}-1-any.pkg.tar.zst\` | Arch, \`pacman -U\` |"
+            echo "| \`sho-metrics-source-linux-${TAG_NAME#v}-1.fc*.noarch.rpm\` | Fedora 43 and 44, \`dnf install\` |"
+            echo "| \`sho-metrics-source-linux_${TAG_NAME#v}_all.deb\` | Ubuntu 26.04, \`apt install ./...\` |"
+            echo "| \`sho-metrics-source-linux-${TAG_NAME#v}.tar.gz\` | source, for the AUR, COPR and PPA recipes |"
+            echo "| \`sho-metrics-source-linux-${TAG_NAME#v}-node-modules.tar.gz\` | the vendored dependencies on their own |"
+            echo
+            echo "After installing, enable the service for your user: \`systemctl --user enable --now shometrics-linux-helper.service\`"
             echo
             echo "### Migrating from the old patched plugin (com.ez.sho-metrics)"
             echo
@@ -164,7 +424,10 @@ jobs:
           (
             cd "${publish_dir}"
             : > checksums.txt
-            sha256sum ShoMetrics-Linux.streamDeckPlugin >> checksums.txt
+            while IFS= read -r asset; do
+              sha256sum "${asset}" >> checksums.txt
+            done < <(find . -maxdepth 1 -type f ! -name checksums.txt ! -name release-notes.md -printf "%P\n" | sort)
+            cat checksums.txt
           )
 
       - name: Report dry run
@@ -173,7 +436,10 @@ jobs:
         run: |
           set -euo pipefail
           echo "Dry run completed. Release assets were prepared but no GitHub Release or tag was created."
-          find release-assets/publish -maxdepth 1 -type f -print
+          echo
+          find release-assets/publish -maxdepth 1 -type f -printf "%12s  %P\n" | sort -k2
+          echo
+          echo "$(find release-assets/publish -maxdepth 1 -type f | wc -l) files staged."
 
       - name: Create release
         if: ${{ inputs.dry_run == false }}
