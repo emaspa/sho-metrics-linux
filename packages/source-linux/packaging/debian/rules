@@ -27,6 +27,14 @@ override_dh_auto_test:
 override_dh_auto_clean:
 	rm -rf debian/unit
 
+# debhelper finds the unit in the install tree and would have the postinst run
+# deb-systemd-helper --user enable, which turns the daemon on for every account
+# on the machine. The Arch and Fedora packages leave it off, the plugin tells
+# the user how to start it, and a sensor daemon for one desktop session has no
+# business starting in everyone else's.
+override_dh_installsystemduser:
+	dh_installsystemduser --no-enable
+
 override_dh_auto_install:
 	install -d $(DESTDIR)$(LIBDIR)
 	cp -a server.mjs package.json proto node_modules $(DESTDIR)$(LIBDIR)/

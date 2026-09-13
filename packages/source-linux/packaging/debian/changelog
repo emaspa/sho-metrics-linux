@@ -1,8 +1,9 @@
-sho-metrics-source-linux (0.3.0+linux2-0ppa1~ubuntu26.04.1) resolute; urgency=medium
+sho-metrics-source-linux (0.3.0+linux3-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
-  * First PPA build of the Sho Metrics Linux helper daemon, from fork tag
-    v0.3.0-linux.2.
-  * Node dependencies are vendored in the source tarball, so nothing calls npm
-    at build or install time.
+  * Stop enabling the user service for every account on the machine.
+    debhelper picked the unit up from the install tree and had the postinst
+    run deb-systemd-helper --user enable, which the Arch and Fedora packages
+    do not do. It is now installed disabled, like the other two.
+  * Keep server.mjs executable, matching its shebang.
 
- -- Emanuele Sparvoli <sparvoli@gmail.com>  Sun, 13 Sep 2026 18:47:03 +0100
+ -- Emanuele Sparvoli <sparvoli@gmail.com>  Sun, 13 Sep 2026 19:05:12 +0100
