@@ -83,6 +83,7 @@ cp -a server.mjs package.json proto node_modules %{buildroot}%{libdir}/
 # npm leaves whatever umask it ran under; normalise before packaging.
 find %{buildroot}%{libdir} -type d -exec chmod 0755 {} +
 find %{buildroot}%{libdir} -type f -exec chmod 0644 {} +
+chmod 0755 %{buildroot}%{libdir}/server.mjs
 
 install -Dpm 0755 %{name} %{buildroot}%{_bindir}/%{name}
 install -Dpm 0644 shometrics-linux-helper.service \
