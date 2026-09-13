@@ -64,7 +64,7 @@ deck working, and Node.js 20+ (`node` on PATH).
 Arch (AUR):
 
 ```sh
-paru -S sho-metrics-source-linux
+yay -S sho-metrics-source-linux
 ```
 
 Fedora 43 and 44 (COPR):
@@ -74,9 +74,16 @@ sudo dnf copr enable emaspa/sho-metrics
 sudo dnf install sho-metrics-source-linux
 ```
 
-Ubuntu 26.04 and other distros: take the `.deb`, `.rpm` or `.pkg.tar.zst`
-from [Releases](https://github.com/emaspa/sho-metrics-linux/releases), or
-install from a checkout of this repository:
+Ubuntu 26.04 (PPA):
+
+```sh
+sudo add-apt-repository ppa:sparvoli/sho-metrics
+sudo apt install sho-metrics-source-linux
+```
+
+Other distros: take the `.deb`, `.rpm` or `.pkg.tar.zst` from
+[Releases](https://github.com/emaspa/sho-metrics-linux/releases), or install
+from a checkout of this repository:
 
 ```sh
 cd packages/source-linux

@@ -35,7 +35,7 @@ Requirements: Node.js 20 or newer.
 Arch:
 
 ```sh
-paru -S sho-metrics-source-linux
+yay -S sho-metrics-source-linux
 ```
 
 Fedora 43 and 44:
@@ -45,8 +45,14 @@ sudo dnf copr enable emaspa/sho-metrics
 sudo dnf install sho-metrics-source-linux
 ```
 
-Ubuntu 26.04 and every other distro: download the `.deb` or the Arch or Fedora
-package from
+Ubuntu 26.04 (PPA):
+
+```sh
+sudo add-apt-repository ppa:sparvoli/sho-metrics
+sudo apt install sho-metrics-source-linux
+```
+
+Every other distro: download the `.deb` or the Arch or Fedora package from
 [Releases](https://github.com/emaspa/sho-metrics-linux/releases), or install
 from a checkout:
 

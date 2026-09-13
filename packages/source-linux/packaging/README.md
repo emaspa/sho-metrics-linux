@@ -204,7 +204,7 @@ regenerate `.SRCINFO`.
 Users install it the usual way:
 
 ```sh
-paru -S sho-metrics-source-linux
+yay -S sho-metrics-source-linux
 systemctl --user enable --now shometrics-linux-helper.service
 ```
 
