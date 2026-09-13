@@ -41,6 +41,7 @@ const supportedNativeRuntimeDependencyPackageNames = [
     "resvg-js-win32-arm64-msvc",
     "resvg-js-darwin-x64",
     "resvg-js-darwin-arm64",
+    "resvg-js-linux-x64-gnu",
 ];
 const runtimeDependencyPackageNames = [
     "resvg-js",
@@ -125,8 +126,13 @@ async function downloadRuntimeDependencyPackage(packageLock, packageName, target
             "--pack-destination",
             temporaryDirectory,
         ], { stdout: "pipe" });
-        const packResultList = JSON.parse(npmPackOutput);
-        const tarballFileName = packResultList[0]?.filename;
+        // npm's --json output is an array on npm <= 10 and an object keyed by
+        // package id on newer versions; accept both.
+        const packResult = JSON.parse(npmPackOutput);
+        const packResultEntry = Array.isArray(packResult)
+            ? packResult[0]
+            : Object.values(packResult)[0];
+        const tarballFileName = packResultEntry?.filename;
         if (typeof tarballFileName !== "string") {
             throw new Error(`npm pack did not return a tarball file for @resvg/${packageName}.`);
         }
@@ -246,6 +252,10 @@ function resolveHostNativeRuntimeDependencyPackageName() {
 
     if (process.platform === "darwin" && process.arch === "arm64") {
         return "resvg-js-darwin-arm64";
+    }
+
+    if (process.platform === "linux" && process.arch === "x64") {
+        return "resvg-js-linux-x64-gnu";
     }
 
     return undefined;

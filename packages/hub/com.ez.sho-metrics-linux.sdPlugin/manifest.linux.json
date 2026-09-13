@@ -1,0 +1,16 @@
+{
+	"$comment": "OpenDeck-only manifest override. OpenDeck merges manifest.<os>.json over manifest.json with a JSON merge patch (arrays replace wholesale), so the OS list restates the Elgato entries and adds linux. The base manifest stays valid against Elgato's schema, which only accepts mac and windows. See https://github.com/nekename/OpenDeck src-tauri/src/plugins/manifest.rs.",
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		},
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		},
+		{
+			"Platform": "linux"
+		}
+	]
+}

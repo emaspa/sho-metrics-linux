@@ -1,0 +1,188 @@
+name: Linux release
+
+# Fork workflow: builds the OpenDeck/Linux plugin package from the linux
+# branch and publishes it as ShoMetrics-Linux.streamDeckPlugin. Upstream's
+# Release workflow stays untouched for the official Windows/macOS pipeline.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, for example v0.3.0-linux.1"
+        required: true
+        type: string
+      plugin_version:
+        description: "Numeric manifest Version, for example 0.3.0.1 (Elgato manifests reject -linux suffixes)"
+        required: true
+        type: string
+      dry_run:
+        description: "Build and stage release assets without creating the GitHub Release"
+        required: true
+        default: true
+        type: boolean
+      prerelease:
+        description: "Mark the GitHub Release as a prerelease"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate release input
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Validate tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != "refs/heads/linux" ]]; then
+            echo "Linux release workflow must run from the linux branch. Selected ref: ${GITHUB_REF}" >&2
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/${INPUT_TAG}" >/dev/null; then
+            echo "Tag already exists: ${INPUT_TAG}" >&2
+            exit 1
+          fi
+
+  build-plugin:
+    name: Build Linux Stream Deck plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - validate
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/hub
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: packages/hub/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Pack Stream Deck plugin
+        env:
+          STREAMDECK_PLUGIN_VERSION: ${{ inputs.plugin_version }}
+        run: npm run pack:streamdeck -- --native-addon-target linux-x64 --version "${STREAMDECK_PLUGIN_VERSION}"
+
+      - name: Upload Stream Deck plugin package
+        uses: actions/upload-artifact@v7
+        with:
+          name: shometrics-linux-streamdeck-plugin
+          path: artifacts/hub/streamdeck-plugin/package/*.streamDeckPlugin
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - validate
+      - build-plugin
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release-artifacts
+
+      - name: Prepare release assets
+        shell: bash
+        env:
+          PLUGIN_VERSION: ${{ inputs.plugin_version }}
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          publish_dir="release-assets/publish"
+          mkdir -p "${publish_dir}"
+
+          plugin_package="$(find release-artifacts -type f -name "com.ez.sho-metrics-linux.streamDeckPlugin" -print -quit)"
+          if [[ ! -f "${plugin_package}" ]]; then
+            echo "Expected Linux Stream Deck plugin package was not found." >&2
+            find release-artifacts -type f >&2
+            exit 1
+          fi
+
+          cp "${plugin_package}" "${publish_dir}/ShoMetrics-Linux.streamDeckPlugin"
+
+          {
+            echo "Sho Metrics Linux plugin ${PLUGIN_VERSION} (${TAG_NAME}), built from the \`linux\` branch for [OpenDeck](https://github.com/nekename/OpenDeck)."
+            echo
+            echo "Requires the Linux helper daemon for deep sensors: [shometrics-linux-helper](https://github.com/emaspa/shometrics-linux-helper)."
+            echo
+            echo "Install through OpenDeck's plugin manager or unzip into \`~/.config/opendeck/plugins/\`."
+          } > "${publish_dir}/release-notes.md"
+
+          (
+            cd "${publish_dir}"
+            : > checksums.txt
+            sha256sum ShoMetrics-Linux.streamDeckPlugin >> checksums.txt
+          )
+
+      - name: Report dry run
+        if: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Dry run completed. Release assets were prepared but no GitHub Release or tag was created."
+          find release-assets/publish -maxdepth 1 -type f -print
+
+      - name: Create release
+        if: ${{ inputs.dry_run == false }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          prerelease_flag=()
+          if [[ "${INPUT_PRERELEASE}" == "true" ]]; then
+            prerelease_flag=(--prerelease)
+          fi
+
+          mapfile -t release_assets < <(find release-assets/publish -maxdepth 1 -type f ! -name "release-notes.md" -print | sort)
+          gh release create "${TAG_NAME}" \
+            "${release_assets[@]}" \
+            --target "${GITHUB_SHA}" \
+            --title "${TAG_NAME}" \
+            --notes-file release-assets/publish/release-notes.md \
+            "${prerelease_flag[@]}"

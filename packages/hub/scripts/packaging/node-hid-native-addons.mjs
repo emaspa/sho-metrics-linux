@@ -32,6 +32,8 @@ export const nodeHidNativeAddonSha256ByRelativePath = {
     "prebuilds/HID-darwin-x64/node-napi-v4.node": "064AE57826FC518797664867FEE70AF583E6FC190199E802A68CBDB74F1CC464",
     "prebuilds/HID-win32-arm64/node-napi-v4.node": "F828702F8079540D7EE9E576CA1D7461424302E2064B425A3118CBBE3A9D2C7E",
     "prebuilds/HID-win32-x64/node-napi-v4.node": "C1781ADCE3FBF61A4D7ADDD8AEA052A6CC162DA6BBC48E476086A9E2B4EA43F8",
+    "prebuilds/HID-linux-x64/node-napi-v4.node": "2551979EDAD9DD566E0E7B213AEAB9E8293BED711C6AE4D3AF7CFBBFEA61C727",
+    "prebuilds/HID_hidraw-linux-x64/node-napi-v4.node": "6C7F3B3FCC238A74E7E3237B50B2FF05181E94862B1963E8074FF8FC75885021",
 };
 
 export const nodeHidNativeAddonRelativePathByTarget = {
@@ -39,11 +41,16 @@ export const nodeHidNativeAddonRelativePathByTarget = {
     "darwin-x64": "prebuilds/HID-darwin-x64/node-napi-v4.node",
     "win32-arm64": "prebuilds/HID-win32-arm64/node-napi-v4.node",
     "win32-x64": "prebuilds/HID-win32-x64/node-napi-v4.node",
+    // node-hid loads the hidraw backend by default on Linux; the libusb
+    // backend is only used when a caller explicitly asks for it.
+    "linux-x64": "prebuilds/HID_hidraw-linux-x64/node-napi-v4.node",
+    "linux-x64-libusb": "prebuilds/HID-linux-x64/node-napi-v4.node",
 };
 
 export const defaultNodeHidNativeAddonTargets = [
     "win32-x64",
     "win32-arm64",
+    "linux-x64",
 ];
 
 export async function assertNodeHidDependencyPinned(options = {}) {
