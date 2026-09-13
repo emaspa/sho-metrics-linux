@@ -21,15 +21,23 @@ Where the packages live:
 | --- | --- |
 | AUR | https://aur.archlinux.org/packages/sho-metrics-source-linux |
 | COPR | https://copr.fedorainfracloud.org/coprs/emaspa/sho-metrics/ |
-| PPA | not created yet, see the PPA section |
+| PPA | https://launchpad.net/~sparvoli/+archive/ubuntu/sho-metrics |
 | Release assets | https://github.com/emaspa/sho-metrics-linux/releases |
 
-Credentials are not on the desktop. The COPR token, the Launchpad signing key
-and dput all live on the `openbox` host (`ssh openbox`, already in
-`~/.ssh/config`), which is the same box OpenXLR publishes from and happens to
-run the PPA's target release, Ubuntu 26.04. Note that copr-cli is not on the
-PATH over a non-interactive ssh session; call `~/.local/bin/copr-cli`. The AUR
-is the exception and pushes straight from the desktop over the default ssh key.
+Credentials are not on the desktop. They live on the `openbox` host
+(`ssh openbox`, already in `~/.ssh/config`), the same box OpenXLR publishes
+from, which also happens to run the PPA's target release, Ubuntu 26.04:
+
+| What | Where on openbox |
+| --- | --- |
+| COPR token | `~/.config/copr` |
+| Launchpad OAuth token | `~/.config/launchpadlib-wireview.creds` |
+| Package signing key | GPG `0E12EEBBC7B9A54D`, in the local keyring |
+| dput, debsign, debhelper, lintian | installed system-wide |
+
+copr-cli is not on the PATH over a non-interactive ssh session; call
+`~/.local/bin/copr-cli`. The AUR is the exception to all of this and pushes
+straight from the desktop over the default ssh key.
 
 ## What gets installed
 
@@ -277,26 +285,44 @@ work. To build for another series anyway, run
 `make-source-package.sh 0.3.0-linux.3 <series> <release number>`, which rewrites
 the changelog suffix for you.
 
-### The one step that needs a browser
+The PPA is https://launchpad.net/~sparvoli/+archive/ubuntu/sho-metrics, under
+the Launchpad account `~sparvoli`, signed with key `0E12EEBBC7B9A54D`.
 
-The Launchpad account is `~sparvoli`, and its signing key
-`0E12EEBBC7B9A54D` is on openbox and already registered. The PPA itself does
-not exist yet, and creating one needs either the web form or an OAuth token
-that this fleet does not have. The existing PPAs are `openxlr` and
-`wireview-hwmon`; the helper does not belong in either.
+### How the PPA was created, without a browser
 
-So one click is needed: https://launchpad.net/~sparvoli/+activate-ppa, named
-`sho-metrics`. After that, nothing else about this channel is manual. While you
-are there, set the PPA's supported series to resolute, so a mistargeted upload
-fails loudly instead of building against something else.
+openbox holds an OAuth token at `~/.config/launchpadlib-wireview.creds`, left
+over from the WireView PPA work and good for writes across the account. Loading
+it is enough to authenticate:
 
-The signed upload for v0.3.0-linux.3 is already built and waiting on openbox in
-`~/sho-metrics-ppa/repo/packages/source-linux/packaging/dist/deb-resolute`. Once
-the PPA exists, it is one command:
-
-```sh
-ssh openbox 'cd ~/sho-metrics-ppa/repo/packages/source-linux/packaging/dist/deb-resolute && dput ppa:sparvoli/sho-metrics sho-metrics-source-linux_0.3.0+linux3-0ppa1~ubuntu26.04.1_source.changes'
+```python
+from launchpadlib.launchpad import Launchpad
+from launchpadlib.credentials import Credentials
+c = Credentials.load_from_path("/home/emanuele/.config/launchpadlib-wireview.creds")
+lp = Launchpad(c, None, None, service_root="production", version="devel")
+print(lp.me.name)   # sparvoli
 ```
+
+Reads work fine through that object. `lp.me.createPPA(...)` does not: it
+returns the person entry, raises nothing, and creates nothing, on launchpadlib
+2.1.0. Do not trust its silence, and check `lp.me.ppas` afterwards.
+
+Posting the operation by hand works and reports what happened. Launchpad signs
+with OAuth 1.0 PLAINTEXT, so the signature is just the two secrets joined by an
+encoded ampersand:
+
+```
+POST https://api.launchpad.net/devel/~sparvoli
+Authorization: OAuth realm="https://api.launchpad.net/",
+  oauth_consumer_key=..., oauth_token=...,
+  oauth_signature_method="PLAINTEXT",
+  oauth_signature="<consumer_secret>%26<access_secret>",
+  oauth_timestamp=..., oauth_nonce=..., oauth_version="1.0"
+body: ws.op=createPPA&name=sho-metrics&displayname=...&description=...
+```
+
+That returns `201 Created` with the new archive in the `Location` header. There
+is no series setting to configure afterwards: a PPA builds whatever series an
+upload's changelog names, which is why the changelog says `resolute`.
 
 ### Publish
 
@@ -314,6 +340,25 @@ DPKG_FLAGS="-S -sa -k0E12EEBBC7B9A54D" \
 dput ppa:sparvoli/sho-metrics \
     packages/source-linux/packaging/dist/deb-resolute/sho-metrics-source-linux_0.3.0+linux3-0ppa1~ubuntu26.04.1_source.changes
 ```
+
+dput re-checks both signatures before it uploads, then ftps the five files up.
+It warns that the upload includes an `.orig.tar.gz` the Debian revision does
+not require; that is the `-sa` flag doing its job on a first upload of this
+upstream version, and it is correct here.
+
+Watch what Launchpad does with it, without waiting for the mail:
+
+```sh
+A=https://api.launchpad.net/devel/~sparvoli/+archive/ubuntu/sho-metrics
+curl -s "$A?ws.op=getPublishedSources&source_name=sho-metrics-source-linux"
+curl -s "$A?ws.op=getBuildRecords&source_name=sho-metrics-source-linux"
+```
+
+The source shows up a couple of minutes after the upload, first as `Pending`,
+then `Published` once the publisher has run. The build record moves through
+`Currently building`, `Uploading build`, and `Successfully built`. Querying the
+collection endpoints can hand back a stale state, so confirm against the build
+itself at `.../+build/<id>` before believing a result.
 
 `DEBEMAIL` and `DEBFULLNAME` have to match the key, or the signature check
 rejects the upload. `make-source-package.sh` unpacks the orig tarball, drops
