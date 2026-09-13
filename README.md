@@ -1,99 +1,149 @@
-# Sho Metrics
+# Sho Metrics Linux
 
-[![Download plugin](https://img.shields.io/badge/Marketplace_Plugin-Download-204CFE?logo=elgato&logoColor=white)](https://marketplace.elgato.com/product/sho-metrics-69957750-4b71-489f-a329-358d27ae67e6) [![Join Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/tRSRAeHU35)
+A community fork of [Sho Metrics](https://github.com/ShoMetrics/sho_metrics)
+bringing its hardware sensor widgets to Linux under
+[OpenDeck](https://github.com/nekename/OpenDeck), with a native Linux helper
+daemon replacing the Windows-only LibreHardwareMonitor helper.
 
-Sho Metrics is a Stream Deck plugin for displaying live system metrics on Stream Deck keys.
+Upstream Sho Metrics supports Windows and macOS. Its author
+[declined official Linux support and endorsed this independent
+fork](https://github.com/ShoMetrics/sho_metrics/issues/5), so this repository
+carries the Linux work while tracking upstream's releases.
 
-It supports Windows and macOS, with built-in metrics for CPU, GPU, memory, disk, network, battery, and custom HTTP JSON endpoints. On Windows, an optional helper unlocks deeper LibreHardwareMonitor-backed sensors such as AMD/Intel GPU metrics, temperatures, fan speeds, and voltages.
+![Sensor keys on a Stream Deck + XL: power and VRAM gauges, GPU hotspot, per-pin 12VHPWR current, fan RPMs, in-game FPS](docs/assets/readme/linux-deck-sensors.png)
 
-![Sho Metrics widgets on Stream Deck keys](docs/assets/readme/stream-deck-dashboard.webp)
+## What you get
 
-![ShoMetrics Helper status window on Windows](docs/assets/readme/windows-helper-status.png)
+Everything Sho Metrics does: circle, gauge, bar, text, and sparkline views,
+dense and stacked multi-metric keys, themes, color compensation. On Linux
+the data comes from:
 
-## Installation
+- **Every hwmon sensor** in `/sys/class/hwmon`: CPU (k10temp/coretemp), board
+  fans and voltages (it87/nct67xx), NVMe temps, DDR5 SPD temps, and anything
+  else with a driver, including exotic hardware like the
+  [WireView Pro](https://github.com/emaspa/wireview-hwmon) power meter
+  (per-pin 12VHPWR current on a deck key!)
+- **NVIDIA GPUs via [LACT](https://github.com/ilya-zlobintsev/LACT)**: core
+  temp, **hotspot**, **VRAM junction and per-chip temps** (readings NVML
+  refuses to expose on Blackwell), fan RPM/PWM, power draw and limit, clocks,
+  VRAM usage, utilization
+- **AMD GPUs** through plain hwmon (amdgpu)
+- **In-game FPS via [MangoHud](https://github.com/flightlessmango/MangoHud)**:
+  FPS, 1% lows, and frametime while a MangoHud-enabled game runs
+- Built-in CPU, memory, disk, network, and custom HTTP JSON metrics, plus the
+  curated CPU/GPU widgets via stable aliases (`cpu.temp`, `gpu.power`, ...)
 
-Most users should start with the Stream Deck plugin:
+## How it works
 
-[![Get it on Elgato Marketplace](site/static/images/badges/elgato-get-on-marketplace-dark.svg)](https://marketplace.elgato.com/product/sho-metrics-69957750-4b71-489f-a329-358d27ae67e6)
+```
+Sho Metrics Linux plugin (OpenDeck)  --gRPC over unix socket-->  packages/source-linux
+        |                                                               |- /sys/class/hwmon
+     OpenDeck                                                           |- lactd (NVIDIA)
+                                                                        |- ~/mangohud_logs
+```
 
-If you need the optional Windows helper that unlocks advanced sensors, download it from:
+The plugin talks to its deep-sensor helper over the same
+`MetricSourceService` gRPC contract (`contracts/proto`) the Windows helper
+uses; `packages/source-linux` is the Linux implementation of that contract,
+and `packages/hub` gates it on a platform capability rather than `win32`.
 
-https://shometrics.github.io/download/
+## Install
 
-## Features
+### 1. The plugin
 
-- Monitor CPU, GPU, memory, disk, network speed, network latency, battery, and custom HTTP JSON metrics.
-- Choose from multiple views: circle, text, linear bar, and sparkline.
-- Style metrics with themes such as default, color filled, terminal, pixel window, and glass.
-- Combine any supported view with any supported theme.
-- Use dense and stacked metric widgets to fit more information onto fewer keys.
-- Apply a global style overlay without overwriting per-key settings.
-- Adjust widget colors with color compensation for physical Stream Deck keys.
+Download `ShoMetrics-Linux.streamDeckPlugin` from
+[Releases](https://github.com/emaspa/sho-metrics-linux/releases) and install it
+through OpenDeck's plugin manager, or unzip it into
+`~/.config/opendeck/plugins/`. Then restart OpenDeck.
 
-## Metrics
+Requirements: [OpenDeck](https://github.com/nekename/OpenDeck) 2.14+ with your
+deck working, and Node.js 20+ (`node` on PATH).
 
-Sho Metrics works without admin privileges for basic metrics.
+### 2. The helper daemon
 
-Built-in sources include:
+From a checkout of this repository:
 
-- CPU usage
-- GPU usage for supported platforms
-- Memory usage
-- Disk usage and throughput
-- Network upload/download speed
-- Network latency
-- Battery (System, bluetooth device, selected Logitech and ROG devices)
-- Custom metrics from HTTP JSON endpoints
+```sh
+cd packages/source-linux
+./install.sh
+```
 
-On Windows, the optional helper can expose additional hardware-backed metrics through LibreHardwareMonitor. Install it only if you need deeper sensor coverage.
+That installs dependencies, writes
+`~/.config/systemd/user/shometrics-linux-helper.service`, and enables and
+starts the daemon. See
+[packages/source-linux/README.md](packages/source-linux/README.md) for the
+sensor sources, MangoHud setup, and the socket path.
 
-## Custom HTTP Metrics
+Optional, for NVIDIA deep sensors: `lact` with the `lactd` service enabled
+(v0.10+ for Blackwell hotspot); your user must be able to read
+`/run/lactd.sock` (wheel group on most distros). Optional, for FPS:
+`mangohud`.
 
-Custom HTTP metrics let Sho Metrics display values from any HTTP endpoint that returns JSON. You provide the endpoint and a jq filter that selects the value to display.
+### 3. Add keys
 
-Examples include Home Assistant sensors, local weather data, homelab status endpoints, or any service that can return JSON.
+In OpenDeck, drag **Advanced Sensor** onto a key and pick from the full
+hardware tree, or use the curated CPU/GPU widgets. Gauge view lives under
+View: Circle, then Variant: Gauge.
 
-See the custom HTTP metric guide:
+## Relationship to upstream
 
-https://shometrics.github.io/faq/custom-http-metric/
+- `main` is a clean mirror of [ShoMetrics/sho_metrics](https://github.com/ShoMetrics/sho_metrics).
+- `linux` carries the fork's changes on top of upstream release tags.
+- Version scheme: fork releases are `vX.Y.Z-linux.N`, where `X.Y.Z` is the
+  upstream base and `N` the fork revision. The changelog always names the
+  upstream base.
+- Windows and macOS behavior is untouched. The plugin keeps the historical
+  `windows-helper` source id and `local:windows-helper` profile id on all
+  platforms for stored-settings compatibility; Linux support is gated behind
+  `supportsHelperSourceOnPlatform()` in the hub.
+- The Linux packaging uses OpenDeck's `manifest.linux.json` override, so the
+  base `manifest.json` stays valid against Elgato's schema.
+- The plugin's UUID is `com.ez.sho-metrics-linux` and its display name is
+  "Sho Metrics Linux - System Monitoring", so it cannot clobber or be
+  clobbered by the official `com.ez.sho-metrics` plugin.
 
-## Documentation
-
-- FAQ: https://shometrics.github.io/faq/
+The Linux daemon began life in the standalone
+[shometrics-linux-helper](https://github.com/emaspa/shometrics-linux-helper)
+repository, which keeps the port's development history and diagnostics tools.
 
 ## Development
 
-Start with the command playbook before running setup, build, test, packaging, or release commands:
+Linux changes live on the `linux` branch. Hub commands run from
+`packages/hub`:
 
-[docs/development/command-playbook.md](docs/development/command-playbook.md)
+```sh
+npm ci
+npm run build
+npm run test:unit          # tsc --noEmit + vitest
+npm run test:pi            # property inspector suite
+npm run pack:streamdeck -- --native-addon-target linux-x64 --version 0.3.0.1
+```
 
-Project contribution rules are in:
+The Linux helper daemon (`packages/source-linux`) loads the contract from
+`contracts/proto` at runtime, so plugin and helper cannot drift. To run it
+directly:
+
+```sh
+cd packages/source-linux
+npm install
+npm start
+```
+
+Upstream's contribution rules still apply to shared code:
 
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [AGENTS.md](AGENTS.md)
-- [.agents/skills](.agents/skills)
-
-For hub development, common commands run from `packages/hub`:
-
-```powershell
-npm run build
-npm run test:unit
-npm run proto:lint
-```
-
-For Windows helper development, use the commands listed in the command playbook.
+- [docs/development/command-playbook.md](docs/development/command-playbook.md)
 
 ## Acknowledgements
 
-Sho Metrics is built on excellent open-source projects, including but not limited to:
-
-- [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor), which powers the optional Windows helper's deeper hardware sensor support.
-- [Lucide](https://github.com/lucide-icons/lucide), used for icons in the plugin UI and rendered widgets.
-- [systeminformation](https://github.com/sebhildebrandt/systeminformation), used for cross-platform system metrics.
-- [resvg-js](https://github.com/yisibl/resvg-js), used for SVG rasterization.
-
-See package-level third-party notices for license details.
+This fork builds on [Sho Metrics](https://github.com/ShoMetrics/sho_metrics)
+by ez and the open-source projects it uses: LibreHardwareMonitor, Lucide,
+systeminformation, and resvg-js. The Linux side adds LACT, MangoHud, and the
+hwmon kernel interface. See package-level third-party notices for license
+details.
 
 ## License
 
-Sho Metrics is free and open source. See [LICENSE](LICENSE).
+GPL-3.0, matching upstream Sho Metrics. See [LICENSE](LICENSE). This is an
+unofficial community fork, not affiliated with Sho Metrics or Elgato.
