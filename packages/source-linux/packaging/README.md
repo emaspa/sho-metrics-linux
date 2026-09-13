@@ -79,9 +79,9 @@ revision N. Each packaging system needs that written its own way.
 
 | | Version | Bump for a packaging-only fix |
 | --- | --- | --- |
-| AUR | `pkgver=0.3.0.linux.2` | `pkgrel` |
-| RPM | `Version: 0.3.0^linux2` | `Release` |
-| Debian | `0.3.0+linux2-0ppa1~ubuntu26.04.1` | the `0ppa1` part |
+| AUR | `pkgver=0.3.0.linux.3` | `pkgrel` |
+| RPM | `Version: 0.3.0^linux3` | `Release` |
+| Debian | `0.3.0+linux3-0ppa1~ubuntu26.04.1` | the `0ppa1` part |
 
 The separators are not interchangeable. Arch forbids `-` in `pkgver`. RPM's `^`
 sorts above plain `0.3.0`, which is what a fork revision should do, and needs
@@ -103,7 +103,7 @@ everything to the GitHub release:
 
 ```sh
 gh workflow run linux-release.yml -R emaspa/sho-metrics-linux --ref linux \
-    -f tag=v0.3.0-linux.2 -f plugin_version=0.3.0.2 \
+    -f tag=v0.3.0-linux.3 -f plugin_version=0.3.0.3 \
     -f dry_run=true -f prerelease=false
 ```
 
@@ -141,7 +141,7 @@ release published. `make-dist.sh` still works locally for testing:
 
 ```sh
 cd packages/source-linux/packaging
-./make-dist.sh 0.3.0-linux.2
+./make-dist.sh 0.3.0-linux.3
 ```
 
 It also writes `sho-metrics-source-linux_<debver>.orig.tar.gz`, which is not a
@@ -172,7 +172,7 @@ makepkg --printsrcinfo > .SRCINFO   # required, the AUR rejects pushes without i
 makepkg -f                          # build it once before pushing
 
 git add PKGBUILD .SRCINFO sho-metrics-source-linux.install
-git commit -m "sho-metrics-source-linux 0.3.0.linux.2-1: initial release"
+git commit -m "sho-metrics-source-linux 0.3.0.linux.3-1: initial release"
 git push
 ```
 
@@ -225,14 +225,14 @@ build root.
 
 ```sh
 mkdir -p rpmbuild/SOURCES
-gh release download v0.3.0-linux.2 -R emaspa/sho-metrics-linux \
-    -p "sho-metrics-source-linux-0.3.0-linux.2.tar.gz" \
-    -p "sho-metrics-source-linux-0.3.0-linux.2-node-modules.tar.gz" \
+gh release download v0.3.0-linux.3 -R emaspa/sho-metrics-linux \
+    -p "sho-metrics-source-linux-0.3.0-linux.3.tar.gz" \
+    -p "sho-metrics-source-linux-0.3.0-linux.3-node-modules.tar.gz" \
     -D rpmbuild/SOURCES
 rpmbuild --define "_topdir $PWD/rpmbuild" -bs packages/source-linux/packaging/rpm/sho-metrics-source-linux.spec
 
-scp 'rpmbuild/SRPMS/sho-metrics-source-linux-0.3.0^linux2-1.src.rpm' openbox:~/sho-metrics-copr/
-ssh openbox '~/.local/bin/copr-cli build --nowait emaspa/sho-metrics ~/sho-metrics-copr/sho-metrics-source-linux-0.3.0\^linux2-1.src.rpm'
+scp 'rpmbuild/SRPMS/sho-metrics-source-linux-0.3.0^linux3-1.src.rpm' openbox:~/sho-metrics-copr/
+ssh openbox '~/.local/bin/copr-cli build --nowait emaspa/sho-metrics ~/sho-metrics-copr/sho-metrics-source-linux-0.3.0\^linux3-1.src.rpm'
 ssh openbox '~/.local/bin/copr-cli watch-build <build id>'
 ```
 
@@ -274,7 +274,7 @@ Older series are a different story and are the reason this is resolute-only:
 noble (24.04 LTS) still ships nodejs 18.19.1, too old for the daemon, and would
 force users into a NodeSource repository. Questing (25.10) has 20.19.4 and would
 work. To build for another series anyway, run
-`make-source-package.sh 0.3.0-linux.2 <series> <release number>`, which rewrites
+`make-source-package.sh 0.3.0-linux.3 <series> <release number>`, which rewrites
 the changelog suffix for you.
 
 ### The one step that needs a browser
@@ -290,6 +290,14 @@ So one click is needed: https://launchpad.net/~sparvoli/+activate-ppa, named
 are there, set the PPA's supported series to resolute, so a mistargeted upload
 fails loudly instead of building against something else.
 
+The signed upload for v0.3.0-linux.3 is already built and waiting on openbox in
+`~/sho-metrics-ppa/repo/packages/source-linux/packaging/dist/deb-resolute`. Once
+the PPA exists, it is one command:
+
+```sh
+ssh openbox 'cd ~/sho-metrics-ppa/repo/packages/source-linux/packaging/dist/deb-resolute && dput ppa:sparvoli/sho-metrics sho-metrics-source-linux_0.3.0+linux3-0ppa1~ubuntu26.04.1_source.changes'
+```
+
 ### Publish
 
 openbox runs Ubuntu 26.04, which is the target series, so the source package is
@@ -297,14 +305,14 @@ built and signed there from a clean checkout of the tag:
 
 ```sh
 ssh openbox
-git clone --depth 1 --branch v0.3.0-linux.2 https://github.com/emaspa/sho-metrics-linux.git ~/sho-metrics-ppa/repo
+git clone --depth 1 --branch v0.3.0-linux.3 https://github.com/emaspa/sho-metrics-linux.git ~/sho-metrics-ppa/repo
 cd ~/sho-metrics-ppa/repo
-packages/source-linux/packaging/make-dist.sh 0.3.0-linux.2
+packages/source-linux/packaging/make-dist.sh 0.3.0-linux.3
 export DEBEMAIL="sparvoli@gmail.com" DEBFULLNAME="Emanuele Sparvoli"
 DPKG_FLAGS="-S -sa -k0E12EEBBC7B9A54D" \
-    packages/source-linux/packaging/debian/make-source-package.sh 0.3.0-linux.2
+    packages/source-linux/packaging/debian/make-source-package.sh 0.3.0-linux.3
 dput ppa:sparvoli/sho-metrics \
-    packages/source-linux/packaging/dist/deb-resolute/sho-metrics-source-linux_0.3.0+linux2-0ppa1~ubuntu26.04.1_source.changes
+    packages/source-linux/packaging/dist/deb-resolute/sho-metrics-source-linux_0.3.0+linux3-0ppa1~ubuntu26.04.1_source.changes
 ```
 
 `DEBEMAIL` and `DEBFULLNAME` have to match the key, or the signature check
@@ -313,7 +321,7 @@ rejects the upload. `make-source-package.sh` unpacks the orig tarball, drops
 `.changes`. Verify with `gpg --verify *_source.changes` before uploading.
 
 The `-sa` flag includes the orig tarball, which Launchpad needs the first time
-it sees upstream version `0.3.0+linux2`. Later revisions of the same upstream
+it sees upstream version `0.3.0+linux3`. Later revisions of the same upstream
 version can use `-sd` to skip re-uploading it. Launchpad emails a result within
 minutes and will not accept the same version twice, so bump the `0ppa1` part
 after a rejection.
@@ -326,7 +334,7 @@ sudo apt install sho-metrics-source-linux
 ```
 
 For a new fork tag, add a changelog entry with
-`dch -v 0.3.0+linux2-0ppa1~ubuntu26.04.1 -D resolute`, or edit
+`dch -v 0.3.0+linux3-0ppa1~ubuntu26.04.1 -D resolute`, or edit
 `debian/changelog` by hand, and commit it to the fork. Keep one entry per fork
 revision and leave the distribution field at `resolute`;
 `make-source-package.sh` rewrites it on the fly when you build for another
