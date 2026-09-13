@@ -55,7 +55,8 @@ cd packages/source-linux
 ./install.sh
 ```
 
-Then enable the service for your user:
+Then enable the service for your user (the checkout `install.sh` already
+enables and starts it):
 
 ```sh
 systemctl --user enable --now shometrics-linux-helper.service

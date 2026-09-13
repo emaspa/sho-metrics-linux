@@ -61,28 +61,37 @@ deck working, and Node.js 20+ (`node` on PATH).
 
 ### 2. The helper daemon
 
-On Arch, `paru -S sho-metrics-source-linux`. On Fedora 43 or 44,
-`sudo dnf copr enable emaspa/sho-metrics && sudo dnf install
-sho-metrics-source-linux`. Ubuntu 26.04 and other distros can take the `.deb`,
-`.rpm` or `.pkg.tar.zst` straight from
-[Releases](https://github.com/emaspa/sho-metrics-linux/releases). Then:
+Arch (AUR):
 
 ```sh
-systemctl --user enable --now shometrics-linux-helper.service
+paru -S sho-metrics-source-linux
 ```
 
-From a checkout of this repository instead:
+Fedora 43 and 44 (COPR):
+
+```sh
+sudo dnf copr enable emaspa/sho-metrics
+sudo dnf install sho-metrics-source-linux
+```
+
+Ubuntu 26.04 and other distros: take the `.deb`, `.rpm` or `.pkg.tar.zst`
+from [Releases](https://github.com/emaspa/sho-metrics-linux/releases), or
+install from a checkout of this repository:
 
 ```sh
 cd packages/source-linux
 ./install.sh
 ```
 
-That installs dependencies, writes
-`~/.config/systemd/user/shometrics-linux-helper.service`, and enables and
-starts the daemon. See
-[packages/source-linux/README.md](packages/source-linux/README.md) for the
-sensor sources, MangoHud setup, and the socket path.
+The distro packages ship the systemd user unit disabled, so enable it once
+(the checkout installer already does this):
+
+```sh
+systemctl --user enable --now shometrics-linux-helper.service
+```
+
+See [packages/source-linux/README.md](packages/source-linux/README.md) for
+the sensor sources, MangoHud setup, and the socket path.
 
 Optional, for NVIDIA deep sensors: `lact` with the `lactd` service enabled
 (v0.10+ for Blackwell hotspot); your user must be able to read
