@@ -41,6 +41,11 @@ The script installs dependencies, writes
 `~/.config/systemd/user/shometrics-linux-helper.service` pointing at this
 checkout, and enables+starts it. Re-run it after pulling a new revision.
 
+Distro packages for Arch, Fedora and Ubuntu live in `packaging/`; see
+`packaging/README.md` for how they are built and published. They install the
+same unit name and use the same socket, so the plugin cannot tell the
+difference.
+
 The daemon listens on
 `/tmp/shometrics-helper/ShoMetrics.Source.Windows.Grpc.v1` (unix socket; the
 endpoint name matches the Windows named pipe so the plugin uses one endpoint
@@ -69,7 +74,12 @@ in a systemd drop-in for the service).
 
 - The wire contract is `contracts/proto/shometrics/v1/`; `server.mjs` loads it
   at runtime with `@grpc/proto-loader`, so contract changes are picked up on
-  restart. The plugin side regenerates from the same files.
+  restart. The plugin side regenerates from the same files. `SHOMETRICS_PROTO_DIR`
+  overrides the include directory, which is how distro packages point at their
+  own copy of the contract.
+- `node server.mjs --check` loads the contract, enumerates sensors and exits
+  without binding the socket, so it is safe to run while the service is up.
+  `--version` prints `HELPER_VERSION`.
 - The plugin keeps the historical `windows-helper` source id and
   `local:windows-helper` profile id on all platforms for stored-settings
   compatibility; `supportsHelperSourceOnPlatform()` in the hub gates Linux.

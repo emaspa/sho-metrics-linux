@@ -480,11 +480,29 @@ const handlers = {
     },
 };
 
+if (process.argv.includes("--version")) {
+    console.log(HELPER_VERSION);
+    process.exit(0);
+}
+
+// Distro packages (AUR/COPR/PPA) install the contract next to the daemon instead
+// of two levels up, so SHOMETRICS_PROTO_DIR overrides the include path. Without
+// it the repo-relative default keeps git checkouts and install.sh working.
+const PROTO_DIR = process.env.SHOMETRICS_PROTO_DIR
+    || join(import.meta.dirname, "..", "..", "contracts", "proto");
 const packageDefinition = protoLoader.loadSync(
     "shometrics/v1/helper_grpc_service.proto",
-    { includeDirs: [join(import.meta.dirname, "..", "..", "contracts", "proto")], keepCase: true, defaults: true },
+    { includeDirs: [PROTO_DIR], keepCase: true, defaults: true },
 );
 const proto = grpc.loadPackageDefinition(packageDefinition);
+
+// --check proves a build can load its contract and read sensors. It never
+// touches the socket, so it is safe to run while the real daemon serves.
+if (process.argv.includes("--check")) {
+    const all = await refreshedSensors();
+    console.log(`shometrics-linux-helper ${HELPER_VERSION}: contract ok in ${PROTO_DIR}, ${all.size} sensors`);
+    process.exit(0);
+}
 
 mkdirSync(SOCKET_DIR, { recursive: true, mode: 0o700 });
 if (existsSync(SOCKET_PATH)) rmSync(SOCKET_PATH);

@@ -1,0 +1,31 @@
+Source: sho-metrics-source-linux
+Section: utils
+Priority: optional
+Maintainer: Emanuele Sparvoli <sparvoli@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/emaspa/sho-metrics-linux
+Rules-Requires-Root: no
+Vcs-Git: https://github.com/emaspa/sho-metrics-linux.git -b linux
+Vcs-Browser: https://github.com/emaspa/sho-metrics-linux/tree/linux/packages/source-linux
+
+Package: sho-metrics-source-linux
+Architecture: all
+Depends: ${misc:Depends}, nodejs (>= 20)
+Suggests: lact, mangohud
+Description: Linux hardware sensor helper for the Sho Metrics OpenDeck plugin
+ A Node daemon that reads Linux hardware sensors and serves them to the Sho
+ Metrics OpenDeck plugin over a gRPC unix socket. It covers every sensor in
+ /sys/class/hwmon (CPU and board temperatures, fans, voltages, power meters),
+ NVIDIA GPUs through LACT, AMD GPUs through amdgpu hwmon, and in-game FPS from
+ MangoHud logs.
+ .
+ The daemon runs as a systemd user service rather than a system service,
+ because it reads the desktop user's MangoHud logs and serves a socket the
+ plugin opens as that same user. The package ships the unit disabled; enable it
+ per user with:
+ .
+   systemctl --user enable --now shometrics-linux-helper.service
+ .
+ Node dependencies are vendored in the package, so nothing calls npm at install
+ time.

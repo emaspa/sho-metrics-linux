@@ -1,0 +1,16 @@
+pkgbase = sho-metrics-source-linux
+	pkgdesc = Linux hardware sensor helper daemon for the Sho Metrics OpenDeck plugin
+	pkgver = 0.3.0.linux.1
+	pkgrel = 1
+	url = https://github.com/emaspa/sho-metrics-linux
+	install = sho-metrics-source-linux.install
+	arch = any
+	license = GPL-3.0-only
+	makedepends = npm
+	depends = nodejs>=20
+	optdepends = lact: NVIDIA GPU sensors (hotspot, VRAM junction, fan, power, clocks)
+	optdepends = mangohud: in-game FPS, 1% lows and frametime
+	source = sho-metrics-source-linux-0.3.0-linux.1.tar.gz::https://github.com/emaspa/sho-metrics-linux/releases/download/v0.3.0-linux.1/sho-metrics-source-linux-0.3.0-linux.1.tar.gz
+	sha256sums = 0000000000000000000000000000000000000000000000000000000000000000
+
+pkgname = sho-metrics-source-linux

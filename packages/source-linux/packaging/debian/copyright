@@ -1,0 +1,39 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: sho-metrics-source-linux
+Upstream-Contact: Emanuele Sparvoli <sparvoli@gmail.com>
+Source: https://github.com/emaspa/sho-metrics-linux
+
+Files: *
+Copyright: 2025-2026 ez (ShoMetrics)
+           2025-2026 Emanuele Sparvoli
+License: GPL-3.0-only
+
+Files: debian/*
+Copyright: 2026 Emanuele Sparvoli
+License: GPL-3.0-only
+
+Files: node_modules/*
+Copyright: various
+Comment: Vendored npm dependencies, taken unmodified from the registry at
+ release time. Each one keeps its own LICENSE file under its directory.
+ @grpc/grpc-js and @grpc/proto-loader are Apache-2.0, protobufjs and the
+ @protobufjs/* helpers are BSD-3-Clause, the rest are MIT or ISC. A package
+ headed for the Debian archive would need this block expanded per module; for a
+ PPA the upstream licence files that ship with the sources are what applies.
+License: Apache-2.0 and BSD-3-Clause and MIT and ISC
+
+License: GPL-3.0-only
+ This program is free software: you can redistribute it and/or modify it under
+ the terms of the GNU General Public License version 3 as published by the Free
+ Software Foundation.
+ .
+ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ .
+ On Debian systems the full text of the GNU General Public License version 3 is
+ in /usr/share/common-licenses/GPL-3.
+
+License: Apache-2.0 and BSD-3-Clause and MIT and ISC
+ See the LICENSE file inside each node_modules subdirectory. On Debian systems
+ the Apache-2.0 text is in /usr/share/common-licenses/Apache-2.0.

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Runs the packaged Sho Metrics Linux helper daemon.
+#
+#   sho-metrics-source-linux --check     load the contract, list sensor count, exit
+#   sho-metrics-source-linux --version   print the helper version
+#
+# The systemd user unit calls node directly, so this is for manual runs.
+set -e
+libdir=/usr/lib/sho-metrics-source-linux
+SHOMETRICS_PROTO_DIR="${SHOMETRICS_PROTO_DIR:-${libdir}/proto}"
+export SHOMETRICS_PROTO_DIR
+exec node "${libdir}/server.mjs" "$@"

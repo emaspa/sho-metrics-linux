@@ -19,6 +19,7 @@ mkdir -p "${UNIT_DIR}"
 
 echo "==> Writing ${UNIT_DIR}/${UNIT_NAME}"
 sed -e "s|@NODE@|${NODE}|" -e "s|@SERVER_PATH@|$(pwd)/server.mjs|" \
+    -e "s|@PROTO_DIR@|$(cd ../.. && pwd)/contracts/proto|" \
     "systemd/${UNIT_NAME}" > "${UNIT_DIR}/${UNIT_NAME}"
 
 systemctl --user daemon-reload

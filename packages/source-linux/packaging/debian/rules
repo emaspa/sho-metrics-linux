@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+
+PKG = sho-metrics-source-linux
+LIBDIR = /usr/lib/$(PKG)
+DESTDIR = debian/$(PKG)
+UNITDIR = /usr/lib/systemd/user
+
+%:
+	dh $@
+
+# The source tarball already carries node_modules, so there is nothing to
+# compile. Launchpad builders have no network and no Node 20, which is why the
+# dependencies are vendored at release time and the test step stays empty.
+override_dh_auto_configure:
+
+# The rendered unit goes in a subdirectory: a file called debian/*.service would
+# be picked up by dh_installsystemd and installed as a system unit.
+override_dh_auto_build:
+	mkdir -p debian/unit
+	sed -e 's|@NODE@|/usr/bin/node|' \
+	    -e 's|@SERVER_PATH@|$(LIBDIR)/server.mjs|' \
+	    -e 's|@PROTO_DIR@|$(LIBDIR)/proto|' \
+	    systemd/shometrics-linux-helper.service > debian/unit/shometrics-linux-helper.service
+
+override_dh_auto_test:
+
+override_dh_auto_clean:
+	rm -rf debian/unit
+
+override_dh_auto_install:
+	install -d $(DESTDIR)$(LIBDIR)
+	cp -a server.mjs package.json proto node_modules $(DESTDIR)$(LIBDIR)/
+	find $(DESTDIR)$(LIBDIR) -type d -exec chmod 0755 {} +
+	find $(DESTDIR)$(LIBDIR) -type f -exec chmod 0644 {} +
+	install -D -m 0755 $(PKG) $(DESTDIR)/usr/bin/$(PKG)
+	install -D -m 0644 debian/unit/shometrics-linux-helper.service \
+	    $(DESTDIR)$(UNITDIR)/shometrics-linux-helper.service
