@@ -1,9 +1,8 @@
-sho-metrics-source-linux (0.3.0+linux1-0ppa1~ubuntu24.04.1) noble; urgency=medium
+sho-metrics-source-linux (0.3.0+linux1-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
   * First PPA build of the Sho Metrics Linux helper daemon, from fork tag
     v0.3.0-linux.1.
-  * Node dependencies are vendored in the source tarball; the package needs
-    nodejs 20 or newer at runtime, which on 24.04 means NodeSource or another
-    backport.
+  * Node dependencies are vendored in the source tarball, so nothing calls npm
+    at build or install time.
 
- -- Emanuele Sparvoli <sparvoli@gmail.com>  Sun, 13 Sep 2026 17:47:31 +0100
+ -- Emanuele Sparvoli <sparvoli@gmail.com>  Sun, 13 Sep 2026 18:14:19 +0100

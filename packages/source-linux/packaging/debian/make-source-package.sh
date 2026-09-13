@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Assembles and signs the Debian source package for a PPA upload.
 #
-#   ./make-source-package.sh 0.3.0-linux.1              # noble, Ubuntu 24.04
-#   ./make-source-package.sh 0.3.0-linux.1 plucky 25.04 # another series
+#   ./make-source-package.sh 0.3.0-linux.1                # resolute, 26.04 LTS
+#   ./make-source-package.sh 0.3.0-linux.1 questing 25.10 # another series
 #
 # Run this on Ubuntu (or in a container of the target series). It needs dpkg-dev,
 # debhelper and devscripts, plus the GPG key Launchpad knows about. Run
@@ -10,8 +10,8 @@
 set -euo pipefail
 
 forkver="${1:-}"
-series="${2:-noble}"
-ubuntuver="${3:-24.04}"
+series="${2:-resolute}"
+ubuntuver="${3:-26.04}"
 if [[ -z ${forkver} ]]; then
     echo "usage: $0 <fork version, e.g. 0.3.0-linux.1> [series] [ubuntu version]" >&2
     exit 1
@@ -36,9 +36,9 @@ tar -C "${work}" -xzf "${orig}"
 cp -r "${here}" "${work}/${name}-${debver}/debian"
 rm -f "${work}/${name}-${debver}/debian/make-source-package.sh"
 
-# One changelog lives in git, for noble. Other series get the same entry with the
-# series suffix swapped, which is what a PPA rebuild across series needs.
-if [[ ${series} != noble ]]; then
+# One changelog lives in git, for resolute. Other series get the same entry with
+# the suffix swapped, which is what a PPA rebuild across series needs.
+if [[ ${series} != resolute ]]; then
     (
         cd "${work}/${name}-${debver}"
         sed -i -e "1s/~ubuntu[0-9.]*1)/~ubuntu${ubuntuver}.1)/" \

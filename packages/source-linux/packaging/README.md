@@ -65,13 +65,14 @@ revision N. Each packaging system needs that written its own way.
 | --- | --- | --- |
 | AUR | `pkgver=0.3.0.linux.1` | `pkgrel` |
 | RPM | `Version: 0.3.0^linux1` | `Release` |
-| Debian | `0.3.0+linux1-0ppa1~ubuntu24.04.1` | the `0ppa1` part |
+| Debian | `0.3.0+linux1-0ppa1~ubuntu26.04.1` | the `0ppa1` part |
 
 The separators are not interchangeable. Arch forbids `-` in `pkgver`. RPM's `^`
 sorts above plain `0.3.0`, which is what a fork revision should do, and needs
 rpm 4.15 or newer (Fedora 31 and up). Debian's `+` does the same job there. The
-`~ubuntu24.04.1` suffix keeps the same source buildable for several Ubuntu
-series in one PPA, ordered by series.
+`~ubuntu26.04.1` suffix is there so the same source can be rebuilt for another
+series later without a version clash. It uses the release number rather than
+the codename because numbers sort in release order and codenames do not.
 
 When `HELPER_VERSION` in `server.mjs` moves to 0.4.0, the next tag is
 `v0.4.0-linux.1` and all three versions reset accordingly. `make-dist.sh`
@@ -221,12 +222,20 @@ for k, v in sorted(d['packages'].items()):
 
 ## PPA
 
-Target series is noble (24.04 LTS). One caveat up front: stock noble ships
-Node 18, and the daemon needs 20 or newer, so the package depends on
-`nodejs (>= 20)` and will not install until the user adds NodeSource or an
-equivalent. Say that in the PPA description. Newer Ubuntu series ship Node 20 or
-later and need nothing extra. Rebuild the same source for another series with
-`make-source-package.sh 0.3.0-linux.1 <series> <version>`.
+Target series is resolute (26.04 LTS), and only that one.
+
+Resolute ships nodejs 22.22.1 in universe, which satisfies the package's
+`nodejs (>= 20)` dependency with nothing added. Checked against
+packages.ubuntu.com on 2026-09-13. Universe is enabled by default on Ubuntu
+desktop installs, so most users need no extra step, but a minimal or server
+install may need `sudo add-apt-repository universe` first.
+
+Older series are a different story and are the reason this is resolute-only:
+noble (24.04 LTS) still ships nodejs 18.19.1, too old for the daemon, and would
+force users into a NodeSource repository. Questing (25.10) has 20.19.4 and would
+work. To build for another series anyway, run
+`make-source-package.sh 0.3.0-linux.1 <series> <release number>`, which rewrites
+the changelog suffix for you.
 
 ### One-time setup
 
@@ -246,7 +255,7 @@ later and need nothing extra. Rebuild the same source for another series with
 cd packages/source-linux/packaging
 ./make-dist.sh 0.3.0-linux.1
 ./debian/make-source-package.sh 0.3.0-linux.1
-dput ppa:emaspa/sho-metrics dist/deb-noble/sho-metrics-source-linux_0.3.0+linux1-0ppa1~ubuntu24.04.1_source.changes
+dput ppa:emaspa/sho-metrics dist/deb-resolute/sho-metrics-source-linux_0.3.0+linux1-0ppa1~ubuntu26.04.1_source.changes
 ```
 
 `make-source-package.sh` unpacks the orig tarball, drops `debian/` in, and runs
@@ -266,9 +275,15 @@ sudo add-apt-repository ppa:emaspa/sho-metrics
 sudo apt install sho-metrics-source-linux
 ```
 
+Set the PPA's supported series to resolute in its Launchpad settings, so a
+mistargeted upload fails loudly instead of building against something else.
+
 For a new fork tag, add a changelog entry with
-`dch -v 0.3.0+linux2-0ppa1~ubuntu24.04.1`, or edit `debian/changelog` by hand,
-and commit it to the fork.
+`dch -v 0.3.0+linux2-0ppa1~ubuntu26.04.1 -D resolute`, or edit
+`debian/changelog` by hand, and commit it to the fork. Keep one entry per fork
+revision and leave the distribution field at `resolute`;
+`make-source-package.sh` rewrites it on the fly when you build for another
+series, so the file in git stays the resolute one.
 
 ## What was verified, and what was not
 
@@ -288,10 +303,14 @@ Run on this machine (Arch, CachyOS):
   systemd's `macros.systemd.in`: `%systemd_user_post` runs `systemctl
   --no-reload preset --global`, so the unit stays disabled unless a Fedora
   preset says otherwise.
-- `dpkg-parsechangelog` on the changelog, both payload targets of `debian/rules`
-  run directly (they produce the same tree as the other two packages), and
-  `dpkg-source -b` producing a clean `3.0 (quilt)` source package.
-- The AUR name check against the aurweb RPC.
+- `dpkg-parsechangelog` on the changelog, which reads back version
+  `0.3.0+linux1-0ppa1~ubuntu26.04.1` for distribution `resolute`; both payload
+  targets of `debian/rules` run directly (they produce the same tree as the
+  other two packages); and `dpkg-source -b` producing a clean `3.0 (quilt)`
+  source package. The series rewrite in `make-source-package.sh` was run against
+  the changelog on its own and parses back as questing 25.10.
+- The AUR name check against the aurweb RPC, and the resolute nodejs version
+  against packages.ubuntu.com.
 
 Not possible here, so hand-reviewed only:
 
