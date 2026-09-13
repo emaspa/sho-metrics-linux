@@ -23,10 +23,12 @@ import type { SendToPropertyInspector } from "../../../node_modules/@elgato/stre
 /**
  * Reports whether the plugin process runs under OpenDeck.
  *
- * OpenDeck is the only Stream Deck host on Linux, and it reports the real
- * platform to Node plugin processes (the "windows" spoof only applies to Wine
- * plugins). Property inspectors separately see `application.platform` as
- * "linux" from OpenDeck's registration info.
+ * OpenDeck is the only Stream Deck host on Linux. Its registration info
+ * cannot be used for this check: OpenDeck hardcodes `platform: "windows"`
+ * into the `-info` payload of Node plugin processes (plugins/mod.rs passes a
+ * constant `true` to info_param::make_info in the Node branch), so the real
+ * `process.platform` is the only reliable signal. Property inspector iframes
+ * do see `application.platform` as "linux".
  */
 export function isOpenDeckPropertyInspectorHost(platform: NodeJS.Platform = process.platform): boolean {
     return platform === "linux";
