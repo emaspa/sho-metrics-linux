@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the release tarballs that the AUR, COPR and PPA recipes consume.
 #
-#   ./make-dist.sh 0.3.0-linux.1
+#   ./make-dist.sh 0.3.0-linux.2
 #
 # Writes three files to packaging/dist:
 #
@@ -15,11 +15,11 @@ set -euo pipefail
 
 forkver="${1:-}"
 if [[ -z ${forkver} ]]; then
-    echo "usage: $0 <fork version, e.g. 0.3.0-linux.1> [outdir]" >&2
+    echo "usage: $0 <fork version, e.g. 0.3.0-linux.2> [outdir]" >&2
     exit 1
 fi
 if [[ ! ${forkver} =~ ^[0-9]+\.[0-9]+\.[0-9]+-linux\.[0-9]+$ ]]; then
-    echo "version must look like 0.3.0-linux.1" >&2
+    echo "version must look like 0.3.0-linux.2" >&2
     exit 1
 fi
 
@@ -29,7 +29,7 @@ repo="$(git -C "${here}" rev-parse --show-toplevel)"
 src="${repo}/packages/source-linux"
 out="${2:-${here}/dist}"
 base="${forkver%%-*}"                   # 0.3.0
-debver="${forkver/-linux./+linux}"      # 0.3.0+linux1
+debver="${forkver/-linux./+linux}"      # 0.3.0+linux2
 
 helper_version="$(node "${src}/server.mjs" --version)"
 pkg_version="$(node -p "require('${src}/package.json').version")"
