@@ -31,7 +31,9 @@ out="${2:-${here}/dist}"
 base="${forkver%%-*}"                   # 0.3.0
 debver="${forkver/-linux./+linux}"      # 0.3.0+linux2
 
-helper_version="$(node "${src}/server.mjs" --version)"
+# Read the constant rather than running the daemon: a fresh checkout has no
+# node_modules yet, and importing @grpc/grpc-js would fail before --version.
+helper_version="$(grep -oP 'const HELPER_VERSION = "\K[^"]+' "${src}/server.mjs")"
 pkg_version="$(node -p "require('${src}/package.json').version")"
 if [[ ${helper_version} != "${base}" || ${pkg_version} != "${base}" ]]; then
     echo "version mismatch: tag says ${base}, server.mjs says ${helper_version}, package.json says ${pkg_version}" >&2
