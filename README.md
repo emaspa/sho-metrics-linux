@@ -61,7 +61,17 @@ deck working, and Node.js 20+ (`node` on PATH).
 
 ### 2. The helper daemon
 
-From a checkout of this repository:
+On Arch, `paru -S sho-metrics-source-linux`. On Fedora 43 or 44,
+`sudo dnf copr enable emaspa/sho-metrics && sudo dnf install
+sho-metrics-source-linux`. Ubuntu 26.04 and other distros can take the `.deb`,
+`.rpm` or `.pkg.tar.zst` straight from
+[Releases](https://github.com/emaspa/sho-metrics-linux/releases). Then:
+
+```sh
+systemctl --user enable --now shometrics-linux-helper.service
+```
+
+From a checkout of this repository instead:
 
 ```sh
 cd packages/source-linux
