@@ -41,9 +41,10 @@ import type { SourceMetricPollingGroupResolution } from "../source-polling-group
 import {
     DEFAULT_WINDOWS_HELPER_GRPC_PIPE_NAME,
     NodeWindowsHelperGrpcTransport,
-    buildWindowsNamedPipeGrpcTarget,
+    buildHelperGrpcTargetForPlatform,
     type WindowsHelperGrpcTransport,
 } from "./windows-helper-grpc-transport";
+import { createDefaultHelperServiceStatusReader } from "./linux-helper-service-status";
 import {
     WindowsHelperSourceClientError,
     classifyHelperRequestFailure,
@@ -182,6 +183,8 @@ export interface WindowsHelperDescriptorPreloadTimer {
 /** Options for the Windows helper source client. */
 export interface WindowsHelperSourceClientOptions {
     readonly pipeName?: string;
+    /** Platform used to pick the helper endpoint and service status probe. */
+    readonly platform?: NodeJS.Platform;
     readonly transport?: WindowsHelperGrpcTransport;
     /** Monotonic test seam for cooldowns, durations, and retry windows. */
     readonly monotonicNow?: () => number;
@@ -227,8 +230,12 @@ export class WindowsHelperSourceClient implements SourceClient {
         const monotonicNow = options.monotonicNow ?? monotonicNowMilliseconds;
         const wallClockNow = options.wallClockNow ?? wallClockNowMilliseconds;
 
+        const platform = options.platform ?? process.platform;
         this.transport = options.transport ?? new NodeWindowsHelperGrpcTransport(
-            buildWindowsNamedPipeGrpcTarget(options.pipeName ?? DEFAULT_WINDOWS_HELPER_GRPC_PIPE_NAME),
+            buildHelperGrpcTargetForPlatform(
+                options.pipeName ?? DEFAULT_WINDOWS_HELPER_GRPC_PIPE_NAME,
+                platform,
+            ),
             monotonicNow,
             wallClockNow,
         );
@@ -247,7 +254,8 @@ export class WindowsHelperSourceClient implements SourceClient {
         this.descriptorPreloadRetryMilliseconds = options.descriptorPreloadRetryMilliseconds
             ?? DEFAULT_DESCRIPTOR_PRELOAD_RETRY_MILLISECONDS;
         this.descriptorPreloadTimer = options.descriptorPreloadTimer ?? nodeDescriptorPreloadTimer;
-        this.serviceStatusReader = options.serviceStatusReader ?? windowsServiceStatusReader;
+        this.serviceStatusReader = options.serviceStatusReader
+            ?? createDefaultHelperServiceStatusReader(platform, windowsServiceStatusReader);
         this.beginHelperRecoveryGrace(monotonicNow());
     }
 

@@ -1,5 +1,6 @@
 import { pluginGlobalSettingsStore } from "../../settings/global-settings-store";
 import { logger } from "../../logging/node-logger";
+import { supportsHelperSourceOnPlatform } from "../../runtime/source-capabilities/helper-source-platform-capabilities";
 import type { ActionKind } from "../../shared/stream-deck-actions";
 import type { WidgetRuntimeCachePatch } from "../../runtime/widget-runtime-cache";
 import type { ResolvedWidgetSettings } from "../../settings/resolved-settings";
@@ -52,7 +53,9 @@ function resolveRuntimeContext(
     runtimeCache: WidgetRuntimeCachePatch | undefined,
 ): ResolveStoredSettingsRuntimeContext {
     return {
-        isWindows: process.platform === "win32",
+        // Historical field name; means "helper-capable platform". Stored
+        // settings and the resolver contract keep the isWindows key.
+        isWindows: supportsHelperSourceOnPlatform(process.platform),
         runtimeMaximumDownloadSpeedMegabitsPerSecond: runtimeCache?.runtimeMaximumDownloadSpeedMbps,
         runtimeMaximumUploadSpeedMegabitsPerSecond: runtimeCache?.runtimeMaximumUploadSpeedMbps,
         runtimeMaximumDiskReadThroughputMebibytesPerSecond:

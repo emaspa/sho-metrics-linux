@@ -5,6 +5,7 @@ import type { SourceMetadataInvalidationListener } from "./source-planning-metad
 import { WindowsHelperSourceClient } from "./windows-helper/windows-helper-source-client";
 import { VendorHidBatterySourceClient } from "./battery-hid/vendor-hid-battery-source-client";
 import { shouldEnableVendorHidBatterySupport } from "../source-capabilities/vendor-hid-battery-platform-capabilities";
+import { supportsHelperSourceOnPlatform } from "../source-capabilities/helper-source-platform-capabilities";
 import {
     createSystemInformationPowerShellSession,
     type NodeSystemWindowsPowerShellSession,
@@ -85,8 +86,8 @@ export function createDefaultSourceRegistry(options: DefaultSourceRegistryOption
     const platform = options.platform ?? process.platform;
     const sourceClients: SourceClient[] = [];
 
-    if (platform === "win32") {
-        sourceClients.push(new WindowsHelperSourceClient());
+    if (supportsHelperSourceOnPlatform(platform)) {
+        sourceClients.push(new WindowsHelperSourceClient({ platform }));
     }
 
     sourceClients.push(createMetricSourceClient(new NodeSystemSource({

@@ -79,6 +79,12 @@ function formatCatalogMetricValue(options: {
             });
         case MetricUnit.HERTZ:
             return formatHertz(safeValue);
+        case MetricUnit.AMPERES:
+            return { value: safeValue.toFixed(1), unit: "A" };
+        case MetricUnit.VOLTS:
+            return { value: safeValue.toFixed(1), unit: "V" };
+        case MetricUnit.WATTS:
+            return { value: safeValue.toFixed(1), unit: "W" };
         default:
             return undefined;
     }

@@ -15,6 +15,7 @@ import {
 } from "lucide";
 import type { IconNode } from "lucide";
 import type { ProgressCircleStatusIcon } from "../../primitives/progress-circle";
+import type { SvgIconDefinition } from "../icon-types";
 import { createLucideIconDefinition } from "../sources/lucide";
 
 /**
@@ -161,7 +162,10 @@ const METRIC_STATUS_ICON_DEFINITION_OPTIONS_BY_KIND = {
     },
 } satisfies Record<MetricStatusIconKind, MetricStatusIconDefinitionOptions>;
 
-export function getMetricStatusIconDefinition(kind: MetricStatusIconKind): ProgressCircleStatusIcon {
+/** Status glyph with the full svg definition fields still attached. */
+export type MetricStatusIconDefinition = ProgressCircleStatusIcon & SvgIconDefinition;
+
+export function getMetricStatusIconDefinition(kind: MetricStatusIconKind): MetricStatusIconDefinition {
     const iconOptions = METRIC_STATUS_ICON_DEFINITION_OPTIONS_BY_KIND[kind];
 
     return {

@@ -361,6 +361,11 @@ export const optionMessages = {
         zh_CN: "电压",
         ja: "電圧",
     },
+    currentOption: {
+        en: "Current",
+        zh_CN: "电流",
+        ja: "電流",
+    },
     fanOption: {
         en: "Fan",
         zh_CN: "风扇",

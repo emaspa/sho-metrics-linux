@@ -23,6 +23,7 @@ import {
     type StreamDeckPropertyInspectorClient,
 } from "../stream-deck/stream-deck-client";
 import { normalizePropertyInspectorHostPlatform } from "../inspector/platform";
+import { supportsHelperSourceOnPlatform } from "../../runtime/source-capabilities/helper-source-platform-capabilities";
 import { resolveStreamDeckActionKind } from "../../shared/stream-deck-actions";
 import type { ActionKind } from "../inspector/settings-types";
 import {
@@ -290,7 +291,9 @@ async function loadPropertyInspectorSettings(
     const connectionInfo = await client.getConnectionInfo();
     const actionKind = resolveStreamDeckActionKind(readActionUuid(connectionInfo));
     const platform = normalizePropertyInspectorHostPlatform(readPropertyInspectorPlatformValue(connectionInfo));
-    const isWindows = platform === "win32";
+    // Historical field name; means "helper-capable platform" (Windows or the
+    // Linux helper under OpenDeck).
+    const isWindows = supportsHelperSourceOnPlatform(platform);
     const isTouchStrip = readIsTouchStripAction(connectionInfo.actionInfo);
     if (isDisposed()) {
         return;

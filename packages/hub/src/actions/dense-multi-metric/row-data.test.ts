@@ -209,6 +209,8 @@ test("dense widget data applies catalog label and raw maximum resolution", () =>
         progress: 0.75,
         history: [],
         label: "PWR",
+        // Watts render with one decimal through the catalog formatter.
+        displayValue: "450.0",
         unit: "W",
         sparklineScale: {
             mode: "fixed",

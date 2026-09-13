@@ -3,6 +3,7 @@ import {
     NODE_SYSTEM_SOURCE_ID,
     WINDOWS_HELPER_SOURCE_ID,
 } from "../sources/source-ids";
+import { supportsHelperSourceOnPlatform } from "../source-capabilities/helper-source-platform-capabilities";
 
 export { LOCAL_SOURCE_SCOPE_ID } from "../sources/source-ids";
 
@@ -174,7 +175,7 @@ function buildMetricIdentityTuple(metric: MetricReadRoute): readonly [
 }
 
 function resolveLocalSourceCandidates(platform: NodeJS.Platform): readonly SourceCandidate[] {
-    if (platform !== "win32") {
+    if (!supportsHelperSourceOnPlatform(platform)) {
         return [{ sourceId: NODE_SYSTEM_SOURCE_ID }];
     }
 

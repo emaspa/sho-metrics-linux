@@ -208,6 +208,36 @@ test("local auto source preference keeps only node-supported GPU metrics outside
     }
 });
 
+test("local auto source preference routes helper-only metrics to the helper on Linux", () => {
+    assert.deepEqual(
+        resolveLocalAutoMetricSourceCandidates(CPU_TEMP_METRIC_KEY, "linux"),
+        WINDOWS_HELPER_CANDIDATES,
+    );
+    assert.equal(isBuiltInMetricSupportedOnPlatform(CPU_TEMP_METRIC_KEY, "linux"), true);
+    // GPU temp has no node-system fallback on Linux, so the filter leaves the
+    // helper alone; GPU usage keeps node-system because systeminformation
+    // serves it on non-Windows platforms.
+    assert.deepEqual(
+        resolveLocalAutoMetricSourceCandidates(GPU_TEMP_METRIC_KEY, "linux"),
+        WINDOWS_HELPER_CANDIDATES,
+    );
+    assert.deepEqual(
+        resolveLocalAutoMetricSourceCandidates(GPU_USAGE_METRIC_KEY, "linux"),
+        WINDOWS_HELPER_THEN_NODE_CANDIDATES,
+    );
+});
+
+test("helper source supports metrics on Linux but not macOS", () => {
+    assert.equal(
+        localSourceSupportsMetricOnPlatform(WINDOWS_HELPER_SOURCE_ID, CPU_TEMP_METRIC_KEY, "linux"),
+        true,
+    );
+    assert.equal(
+        localSourceSupportsMetricOnPlatform(WINDOWS_HELPER_SOURCE_ID, CPU_TEMP_METRIC_KEY, "darwin"),
+        false,
+    );
+});
+
 test("local auto source preference uses node-system for supported non-Windows disk throughput", () => {
     assert.deepEqual(
         resolveLocalAutoMetricSourceCandidates(getDiskThroughputMetricKey("read"), "darwin"),
@@ -217,7 +247,7 @@ test("local auto source preference uses node-system for supported non-Windows di
 
 test("local auto source candidates always satisfy source platform support", () => {
     for (const metricKey of BUILT_IN_STABLE_METRIC_KEYS) {
-        for (const platform of ["win32", "darwin"] as const) {
+        for (const platform of ["win32", "darwin", "linux"] as const) {
             for (const sourceCandidate of resolveLocalAutoMetricSourceCandidates(metricKey, platform)) {
                 assert.equal(
                     localSourceSupportsMetricOnPlatform(sourceCandidate.sourceId, metricKey, platform),

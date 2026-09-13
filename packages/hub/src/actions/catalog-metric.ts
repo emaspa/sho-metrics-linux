@@ -13,6 +13,7 @@ import {
 } from "./shared/helper-backed-widget-data";
 import { logger } from "../logging/node-logger";
 import { WINDOWS_HELPER_SOURCE_ID } from "../runtime/sources/source-ids";
+import { supportsHelperSourceOnPlatform } from "../runtime/source-capabilities/helper-source-platform-capabilities";
 import type { MetricDescriptorSnapshot, SourceClientStatus } from "../runtime/sources/source-client";
 import { backgroundMetricCollection } from "../runtime/metric-collection/background-metric-collection";
 import { refreshCatalogMetricDescriptorRuntimeCache } from "./shared/catalog-metric-descriptor-runtime-cache";
@@ -30,6 +31,8 @@ import {
     formatCatalogMetricFreshWidgetData,
 } from "../metrics/catalog-metric-widget-data";
 import { metricStatusIconForCatalogReadingKind } from "../metrics/catalog-metric-view-icons";
+import { getMetricStatusIconDefinition } from "../widgets/icons/catalog/status";
+import { renderCenteredIconFragment } from "../widgets/icons/render-icon";
 import {
     limitMetricCustomLabelCharacters,
     resolveMetricCustomLabelDisplayMaximumCharacters,
@@ -50,8 +53,31 @@ const CATALOG_BAR_LABEL_BY_CATEGORY = {
     other: "Metric",
     unspecified: "Metric",
 } as const satisfies Record<ResolvedCatalogMetricTarget["detectedCategory"], string>;
+/**
+ * Bar-view titles for hardware without a category name of its own.
+ *
+ * "Metric" says nothing about a WireView rail or a fan header, but the reading
+ * kind is known, so title those bars by what they measure. The sensor's own
+ * label still renders at the bottom of the bar.
+ */
+const CATALOG_BAR_LABEL_BY_READING_KIND = {
+    temperature: "Temperature",
+    usage: "Usage",
+    clock: "Clock",
+    voltage: "Voltage",
+    current: "Current",
+    power: "Power",
+    fan: "Fan",
+    control: "Control",
+    data: "Data",
+    throughput: "Throughput",
+    timing: "Timing",
+    level: "Level",
+} as const satisfies Partial<Record<ResolvedCatalogMetricTarget["detectedReadingKind"], string>>;
 export const CATALOG_INSTALL_HELPER_NOTICE_TEXT = HELPER_INSTALL_NOTICE_TEXT;
 export const CATALOG_CHOOSE_METRIC_NOTICE_TEXT = "Choose metric";
+/** Center glyph size for reading-kind icons on uncategorized catalog bars. */
+const CATALOG_READING_KIND_ICON_SIZE = 58;
 
 @action({ UUID: STREAM_DECK_ACTION_UUID_BY_KIND.catalog })
 export class CatalogMetric extends MetricAction {
@@ -187,7 +213,7 @@ export function buildCatalogMetricSelectedViewOptions(options: {
         ?? limitMetricCustomLabelCharacters(defaultLabel, displayMaximumLabelCharacters)
         ?? CATALOG_NO_SELECTION_LABEL;
     const label = limitMetricCustomLabelCharacters(
-        selectedView === "bar" ? CATALOG_BAR_LABEL_BY_CATEGORY[options.target.detectedCategory] : customLabel ?? defaultLabel,
+        selectedView === "bar" ? resolveCatalogBarViewLabel(options.target) : customLabel ?? defaultLabel,
         displayMaximumLabelCharacters,
     ) ?? CATALOG_NO_SELECTION_LABEL;
     const maxValue = options.target.customMaximumValue
@@ -237,15 +263,33 @@ export function buildCatalogMetricSelectedViewOptions(options: {
     };
 }
 
+function resolveCatalogBarViewLabel(target: ResolvedCatalogMetricTarget): string {
+    if (target.detectedCategory !== "other" && target.detectedCategory !== "unspecified") {
+        return CATALOG_BAR_LABEL_BY_CATEGORY[target.detectedCategory];
+    }
+
+    return CATALOG_BAR_LABEL_BY_READING_KIND[
+        target.detectedReadingKind as keyof typeof CATALOG_BAR_LABEL_BY_READING_KIND
+    ] ?? CATALOG_BAR_LABEL_BY_CATEGORY[target.detectedCategory];
+}
+
 function buildCatalogMetricViewIcons(target: ResolvedCatalogMetricTarget): ReturnType<typeof buildMetricViewIcons> {
+    const statusIconKind = metricStatusIconForCatalogReadingKind(target.detectedReadingKind);
     const fallbackIcons = buildMetricViewIcons({
         hardware: target.detectedCategory,
-        status: metricStatusIconForCatalogReadingKind(target.detectedReadingKind),
+        status: statusIconKind,
     });
+    // Uncategorized hardware (power meters, fan controllers, SPD hubs) has no
+    // meaningful center glyph, so show what the sensor measures instead.
+    const readingKindIconFragment = target.detectedCategory === "other" || target.detectedCategory === "unspecified"
+        ? renderCenteredIconFragment(getMetricStatusIconDefinition(statusIconKind), CATALOG_READING_KIND_ICON_SIZE)
+        : undefined;
 
     return {
         ...fallbackIcons,
-        centerIconFragment: getMetricIconFragment(target.customIconId) ?? fallbackIcons.centerIconFragment,
+        centerIconFragment: getMetricIconFragment(target.customIconId)
+            ?? readingKindIconFragment
+            ?? fallbackIcons.centerIconFragment,
     };
 }
 
@@ -263,7 +307,7 @@ function resolveNoSelectionNoticeText(
     helperStatus: SourceClientStatus | undefined,
     platform: NodeJS.Platform,
 ): string | undefined {
-    if (platform !== "win32") {
+    if (!supportsHelperSourceOnPlatform(platform)) {
         return undefined;
     }
 

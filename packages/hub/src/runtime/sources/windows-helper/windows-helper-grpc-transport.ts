@@ -28,6 +28,15 @@ const log = logger.for("Source:WindowsHelper");
 /** Named pipe name used by the Windows helper gRPC source API. */
 export const DEFAULT_WINDOWS_HELPER_GRPC_PIPE_NAME = "ShoMetrics.Source.Windows.Grpc.v1";
 
+/**
+ * Socket directory used by the Linux helper daemon.
+ *
+ * The Linux helper (shometrics-linux-helper) listens on a unix socket inside
+ * this directory, named after the same service constant as the Windows pipe so
+ * one endpoint name identifies the helper on both platforms.
+ */
+export const DEFAULT_LINUX_HELPER_SOCKET_DIRECTORY = "/tmp/shometrics-helper";
+
 /** Mirrors `MaximumGrpcMessageBytes` in the Windows helper service constants. */
 export const MAXIMUM_SOURCE_GRPC_MESSAGE_BYTES = 1024 * 1024;
 
@@ -68,6 +77,21 @@ export interface WindowsHelperGrpcTransport {
 /** Builds the exact grpc-js target string for a Windows named pipe. */
 export function buildWindowsNamedPipeGrpcTarget(pipeName: string): string {
     return `unix:\\\\.\\pipe\\${pipeName}`;
+}
+
+/** Builds the exact grpc-js target string for the Linux helper unix socket. */
+export function buildLinuxHelperSocketGrpcTarget(socketName: string): string {
+    return `unix://${DEFAULT_LINUX_HELPER_SOCKET_DIRECTORY}/${socketName}`;
+}
+
+/** Builds the helper gRPC target for the platform the plugin runs on. */
+export function buildHelperGrpcTargetForPlatform(
+    endpointName: string,
+    platform: NodeJS.Platform,
+): string {
+    return platform === "linux"
+        ? buildLinuxHelperSocketGrpcTarget(endpointName)
+        : buildWindowsNamedPipeGrpcTarget(endpointName);
 }
 
 export class NodeWindowsHelperGrpcTransport implements WindowsHelperGrpcTransport {

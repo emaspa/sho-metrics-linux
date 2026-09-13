@@ -45,7 +45,27 @@ test("buildLocalMetricReadPlan prefers the Windows helper before the node system
     });
 });
 
-test("buildLocalMetricReadPlan uses only the node system source outside Windows", () => {
+test("buildLocalMetricReadPlan prefers the Linux helper before the node system source on Linux", () => {
+    const readPlan = buildLocalMetricReadPlan([
+        "cpu.usage_percent",
+    ], { platform: "linux" });
+
+    assert.deepEqual(readPlan, {
+        metrics: [
+            {
+                sourceScopeId: "local",
+                metricKey: "cpu.usage_percent",
+                sourceCandidates: [
+                    { sourceId: WINDOWS_HELPER_SOURCE_ID },
+                    { sourceId: NODE_SYSTEM_SOURCE_ID },
+                ],
+                failureMode: "fallback",
+            },
+        ],
+    });
+});
+
+test("buildLocalMetricReadPlan uses only the node system source outside helper-capable platforms", () => {
     const readPlan = buildLocalMetricReadPlan([
         "net.down",
         "cpu.usage_percent",

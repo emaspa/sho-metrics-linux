@@ -15,17 +15,23 @@ test("catalog metric widget data formats hertz values across display ranges", ()
     assertFormattedHertz(3_600_000_000, "3.6", "GHz");
 });
 
-test("catalog metric widget data leaves ordinary units unchanged", () => {
+test("catalog metric widget data formats electrical units with one decimal", () => {
+    assertFormattedElectrical(MetricUnit.AMPERES, 8.94, "8.9", "A");
+    assertFormattedElectrical(MetricUnit.VOLTS, 12.16, "12.2", "V");
+    assertFormattedElectrical(MetricUnit.WATTS, 42, "42.0", "W");
+});
+
+test("catalog metric widget data leaves other units unchanged", () => {
     const widgetData = buildWidgetData({
-        current: 42,
-        unit: "W",
-        displayValue: "42",
+        current: 1200,
+        unit: "RPM",
+        displayValue: "1200",
     });
 
     assert.equal(formatCatalogMetricFreshWidgetData({
         widgetData,
-        unit: MetricUnit.WATTS,
-        category: "gpu",
+        unit: MetricUnit.REVOLUTIONS_PER_MINUTE,
+        category: "other",
     }), widgetData);
 });
 
@@ -43,6 +49,23 @@ test("catalog metric fixed scale leaves negative readings on the zero baseline",
         maximumValue: 20,
     });
 });
+
+function assertFormattedElectrical(
+    unit: MetricUnit,
+    current: number,
+    displayValue: string,
+    unitText: string,
+): void {
+    const widgetData = formatCatalogMetricFreshWidgetData({
+        widgetData: buildWidgetData({ current }),
+        unit,
+        category: "other",
+    });
+
+    assert.equal(widgetData.current, current);
+    assert.equal(widgetData.displayValue, displayValue);
+    assert.equal(widgetData.unit, unitText);
+}
 
 function assertFormattedHertz(current: number, displayValue: string, unit: string): void {
     const widgetData = formatCatalogMetricFreshWidgetData({

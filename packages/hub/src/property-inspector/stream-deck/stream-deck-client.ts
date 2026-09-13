@@ -1,4 +1,5 @@
 import { normalizePropertyInspectorHostPlatform } from "../inspector/platform";
+import { supportsHelperSourceOnPlatform } from "../../runtime/source-capabilities/helper-source-platform-capabilities";
 import type { PropertyInspectorExternalUrl } from "../external-urls";
 
 export type SettingsRecord = Record<string, unknown>;
@@ -401,9 +402,17 @@ export function readActionUuid(connectionInfo: ConnectionInfo): string {
         ?? "";
 }
 
-/** Reports whether the PI host is running on Windows. */
+/**
+ * Reports whether the PI runs on a helper-capable platform.
+ *
+ * Historical name; the flag gates helper-backed sensor UI. OpenDeck reports
+ * application.platform as "linux" to inspectors, so the Linux helper counts
+ * here too.
+ */
 export function resolveIsWindowsPropertyInspector(connectionInfo: ConnectionInfo): boolean {
-    return normalizePropertyInspectorHostPlatform(readPropertyInspectorPlatformValue(connectionInfo)) === "win32";
+    return supportsHelperSourceOnPlatform(
+        normalizePropertyInspectorHostPlatform(readPropertyInspectorPlatformValue(connectionInfo)),
+    );
 }
 
 /**

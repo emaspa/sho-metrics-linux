@@ -43,7 +43,10 @@ export function resolveCatalogMetricDefaultMaximumValue(
         case MetricUnit.VOLTS:
             return 20;
         case MetricUnit.AMPERES:
-            return 100;
+            // Working range of a single 12V-2x6 pin. A 100 A rail-total scale
+            // leaves per-pin current bars nearly empty; keys showing rail
+            // totals can set a per-key custom maximum instead.
+            return 12;
         case MetricUnit.WATTS:
             return resolvePowerDefaultMaximumValue(category);
         case MetricUnit.HERTZ:

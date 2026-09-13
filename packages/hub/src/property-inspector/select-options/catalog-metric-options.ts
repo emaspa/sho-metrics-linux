@@ -12,9 +12,11 @@ import type { SelectOption } from "../inspector/types";
 
 export type CatalogMetricTypeId = Exclude<CatalogMetricCategory, "unspecified">;
 
-// Current and level are stored reading kinds, but they are not picker groups in
-// this batch because they have no distinct label, scale, or caption behavior.
-type ReadingId = Exclude<CatalogMetricReadingKind, "unspecified" | "current" | "level">;
+// Level is a stored reading kind but not a picker group yet: it has no
+// distinct label, scale, or caption behavior. Current is a group because
+// per-pin and per-rail amperes sensors (12VHPWR power meters, wireview-style
+// hwmon drivers) are otherwise buried under "Other".
+type ReadingId = Exclude<CatalogMetricReadingKind, "unspecified" | "level">;
 
 export interface CatalogMetricSelection {
     readonly typeId: CatalogMetricTypeId | "";
@@ -88,13 +90,14 @@ const READING_SORT_ORDER_BY_ID = {
     usage: 1,
     clock: 2,
     voltage: 3,
-    power: 4,
-    fan: 5,
-    control: 6,
-    data: 7,
-    throughput: 8,
-    timing: 9,
-    other: 10,
+    current: 4,
+    power: 5,
+    fan: 6,
+    control: 7,
+    data: 8,
+    throughput: 9,
+    timing: 10,
+    other: 11,
 } as const satisfies Record<ReadingId, number>;
 
 const READING_LABEL_BY_ID = {
@@ -102,6 +105,7 @@ const READING_LABEL_BY_ID = {
     usage: "Usage",
     clock: "Clock",
     voltage: "Voltage",
+    current: "Current",
     power: "Power",
     fan: "Fan",
     control: "Control",
@@ -345,6 +349,8 @@ function classifyReading(sourceSensorType: string): ReadingId {
             return "clock";
         case "voltage":
             return "voltage";
+        case "current":
+            return "current";
         case "power":
             return "power";
         case "fan":
@@ -544,6 +550,8 @@ function readReadingLabel(readingId: ReadingId, i18n: I18n | undefined): string 
             return i18n.t(optionMessages.clockOption);
         case "voltage":
             return i18n.t(optionMessages.voltageOption);
+        case "current":
+            return i18n.t(optionMessages.currentOption);
         case "power":
             return i18n.t(optionMessages.powerOption);
         case "fan":

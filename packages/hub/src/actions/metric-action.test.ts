@@ -13,6 +13,7 @@ import type {
     JsonValue,
 } from "@elgato/utils";
 import { MetricAction, type MetricCollectionBinding } from "./metric-action";
+import type { OpenDeckPropertyInspectorChannel } from "../runtime/opendeck/pi-channel";
 import type { SingleMetricViewOptions } from "../view-updates/runner";
 import type {
     DisplayedMetricNoDataObservation,
@@ -879,7 +880,10 @@ test("color compensation messages update delegated preview state and disappear c
 });
 
 test("plugin runtime connection pings reply to the Property Inspector", () => {
-    const action = new TestMetricAction();
+    const action = new TestMetricAction(undefined, undefined, undefined, undefined, {
+        isHost: () => false,
+        sendToAction: () => Promise.resolve(),
+    });
     const streamDeckAction = new FakeStreamDeckAction("plugin-runtime-ping-action");
     const sendToPropertyInspector = vi.spyOn(streamDeck.ui, "sendToPropertyInspector")
         .mockResolvedValue(undefined);
@@ -898,6 +902,41 @@ test("plugin runtime connection pings reply to the Property Inspector", () => {
             requestId: "request-1",
         });
         assert.equal(action.metricsUpdateSnapshots.length, 0);
+    } finally {
+        sendToPropertyInspector.mockRestore();
+    }
+});
+
+test("plugin runtime connection pings reply through the action context on OpenDeck", () => {
+    const sentReplies: Array<{ contextId: string; message: JsonValue }> = [];
+    const action = new TestMetricAction(undefined, undefined, undefined, undefined, {
+        isHost: () => true,
+        sendToAction: (contextId, payload) => {
+            sentReplies.push({ contextId, message: payload as JsonValue });
+            return Promise.resolve();
+        },
+    });
+    const streamDeckAction = new FakeStreamDeckAction("opendeck-ping-action");
+    const sendToPropertyInspector = vi.spyOn(streamDeck.ui, "sendToPropertyInspector")
+        .mockResolvedValue(undefined);
+
+    try {
+        action.onSendToPlugin(buildSendToPluginEvent(
+            streamDeckAction,
+            buildPropertyInspectorPluginRuntimePingMessage("request-2"),
+        ));
+
+        // OpenDeck keeps inspector iframes mounted hidden, so the reply must
+        // go through the ping's own action context, not the SDK's
+        // current-inspector send which would be dropped.
+        assert.equal(sendToPropertyInspector.mock.calls.length, 0);
+        assert.equal(sentReplies.length, 1);
+        assert.equal(sentReplies[0]?.contextId, "opendeck-ping-action");
+        assert.deepEqual(readPropertyInspectorPluginRuntimePongMessage(sentReplies[0]?.message), {
+            type: "shoMetrics.propertyInspectorPluginRuntimeConnection",
+            command: "pong",
+            requestId: "request-2",
+        });
     } finally {
         sendToPropertyInspector.mockRestore();
     }
@@ -1108,8 +1147,9 @@ class TestMetricAction extends MetricAction {
         displayedMetricNoDataObserver?: DisplayedMetricNoDataObserver,
         windowsHelperControlPanelLauncher?: WindowsHelperControlPanelLauncher,
         helperUpdateNoticeReader?: HelperUpdateNoticeReader,
+        openDeckPiChannel?: OpenDeckPropertyInspectorChannel,
     ) {
-        super({ displayedMetricNoDataObserver, windowsHelperControlPanelLauncher, helperUpdateNoticeReader });
+        super({ displayedMetricNoDataObserver, windowsHelperControlPanelLauncher, helperUpdateNoticeReader, openDeckPiChannel });
         this.bindingFactory = bindingFactory ?? (() => new FakeMetricCollectionBinding());
     }
 

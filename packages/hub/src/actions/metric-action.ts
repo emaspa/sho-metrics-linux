@@ -23,6 +23,10 @@ import {
 } from "../view-updates/runner";
 import { logger } from "../logging/node-logger";
 import { formatMetricKeyFieldsForLog } from "../logging/log-format";
+import {
+    defaultOpenDeckPropertyInspectorChannel,
+    type OpenDeckPropertyInspectorChannel,
+} from "../runtime/opendeck/pi-channel";
 import { pluginGlobalSettingsStore } from "../settings/global-settings-store";
 import {
     resolveActionSettings,
@@ -112,6 +116,7 @@ interface MetricActionOptions {
     readonly displayedMetricNoDataObserver?: DisplayedMetricNoDataObserver;
     readonly windowsHelperControlPanelLauncher?: WindowsHelperControlPanelLauncher;
     readonly helperUpdateNoticeReader?: HelperUpdateNoticeReader;
+    readonly openDeckPiChannel?: OpenDeckPropertyInspectorChannel;
 }
 
 /** Tracks one manual refresh acknowledgement badge until the request settles and the badge is readable. */
@@ -141,6 +146,7 @@ export abstract class MetricAction extends SingletonAction {
     private readonly displayedMetricNoDataObserver: DisplayedMetricNoDataObserver;
     private readonly windowsHelperControlPanelLauncher: WindowsHelperControlPanelLauncher;
     private readonly helperUpdateNoticeReader: HelperUpdateNoticeReader;
+    private readonly openDeckPiChannel: OpenDeckPropertyInspectorChannel;
 
     protected abstract readonly actionKind: ActionKind;
 
@@ -151,6 +157,7 @@ export abstract class MetricAction extends SingletonAction {
         this.windowsHelperControlPanelLauncher = options.windowsHelperControlPanelLauncher
             ?? windowsHelperControlPanelLauncher;
         this.helperUpdateNoticeReader = options.helperUpdateNoticeReader ?? helperUpdateNotifier;
+        this.openDeckPiChannel = options.openDeckPiChannel ?? defaultOpenDeckPropertyInspectorChannel;
         pluginGlobalSettingsStore.subscribe(() => {
             this.resubscribeAllActions();
             for (const activeActionState of this.activeActionStates.values()) {
@@ -246,9 +253,18 @@ export abstract class MetricAction extends SingletonAction {
         // runtime is down" from "a specific feature misbehaved".
         const pluginRuntimePingMessage = readPropertyInspectorPluginRuntimePingMessage(event.payload);
         if (pluginRuntimePingMessage !== null) {
-            void streamDeck.ui.sendToPropertyInspector(
-                buildPropertyInspectorPluginRuntimePongMessage(pluginRuntimePingMessage.requestId),
+            const pongMessage = buildPropertyInspectorPluginRuntimePongMessage(
+                pluginRuntimePingMessage.requestId,
             );
+            if (this.openDeckPiChannel.isHost()) {
+                // OpenDeck mounts inspector iframes hidden and withholds
+                // didAppear until the panel opens, so the SDK has no "current"
+                // inspector yet and ui.sendToPropertyInspector would drop this
+                // reply. Answer through the ping's own action context instead.
+                void this.openDeckPiChannel.sendToAction(event.action.id, pongMessage);
+            } else {
+                void streamDeck.ui.sendToPropertyInspector(pongMessage);
+            }
             return;
         }
 

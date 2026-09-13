@@ -28,6 +28,7 @@ import {
 } from "../sources/source-ids";
 import { isNodeSystemMetricSupportedOnPlatform } from "../source-capabilities/node-system-platform-capabilities";
 import { shouldEnableVendorHidBatterySupport } from "../source-capabilities/vendor-hid-battery-platform-capabilities";
+import { supportsHelperSourceOnPlatform } from "../source-capabilities/helper-source-platform-capabilities";
 import type { MetricSupportPlatform } from "../source-capabilities/metric-support-platform";
 
 const NODE_SYSTEM_ONLY_METRIC_KEYS = [
@@ -177,7 +178,7 @@ export function localSourceSupportsMetricOnPlatform(
 ): boolean {
     switch (sourceId) {
         case WINDOWS_HELPER_SOURCE_ID:
-            return platform === "win32";
+            return supportsHelperSourceOnPlatform(platform);
         case VENDOR_HID_BATTERY_SOURCE_ID:
             return shouldEnableVendorHidBatterySupport(platform) && isVendorHidBatteryMetricKey(metricKey);
         case NODE_SYSTEM_SOURCE_ID:

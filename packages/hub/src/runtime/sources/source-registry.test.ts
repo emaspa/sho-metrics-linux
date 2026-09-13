@@ -35,7 +35,28 @@ test("default source registry registers the Windows helper before fallback on Wi
     }
 });
 
-test("default source registry excludes the Windows helper outside Windows", () => {
+test("default source registry registers the helper on Linux", () => {
+    const sourceRegistry = createDefaultSourceRegistry({ platform: "linux" });
+
+    try {
+        assert.equal(
+            sourceRegistry.resolveSourceClient(WINDOWS_HELPER_SOURCE_ID)?.sourceId,
+            WINDOWS_HELPER_SOURCE_ID,
+        );
+        assert.equal(
+            sourceRegistry.resolveSourceClient(NODE_SYSTEM_SOURCE_ID)?.sourceId,
+            NODE_SYSTEM_SOURCE_ID,
+        );
+        assert.equal(
+            sourceRegistry.resolveSourceClient(CUSTOM_HTTP_SOURCE_ID)?.sourceId,
+            CUSTOM_HTTP_SOURCE_ID,
+        );
+    } finally {
+        sourceRegistry.dispose();
+    }
+});
+
+test("default source registry excludes the helper outside helper-capable platforms", () => {
     const sourceRegistry = createDefaultSourceRegistry({ platform: "darwin" });
 
     try {

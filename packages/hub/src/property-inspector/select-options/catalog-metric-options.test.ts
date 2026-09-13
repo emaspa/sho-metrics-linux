@@ -368,7 +368,11 @@ test("catalog options return semantic metadata for other and unknown readings", 
     });
 
     assert.equal(currentOptions.selectedMetric?.category, "other");
-    assert.equal(currentOptions.selectedMetric?.readingKind, "other");
+    // Amperes sensors get their own picker group instead of "Other".
+    assert.equal(currentOptions.selectedMetric?.readingKind, "current");
+    assert.ok(currentOptions.readingOptions.some(option =>
+        option.value === "current" && option.label === "Current",
+    ));
     assert.equal(levelOptions.selectedMetric?.category, "other");
     assert.equal(levelOptions.selectedMetric?.readingKind, "other");
     assert.equal(customOptions.selectedMetric?.category, "other");

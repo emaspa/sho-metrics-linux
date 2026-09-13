@@ -1,6 +1,7 @@
 import { logger } from "../../logging/node-logger";
 import { backgroundMetricCollection } from "../../runtime/metric-collection/background-metric-collection";
 import { WINDOWS_HELPER_SOURCE_ID } from "../../runtime/sources/source-ids";
+import { supportsHelperSourceOnPlatform } from "../../runtime/source-capabilities/helper-source-platform-capabilities";
 import type { MetricDescriptorSnapshot, SourceClientStatus } from "../../runtime/sources/source-client";
 import type { WidgetRuntimeCachePatch } from "../../runtime/widget-runtime-cache";
 
@@ -21,11 +22,12 @@ export async function refreshCatalogMetricDescriptorRuntimeCache({
     updateRuntimeCache,
     readMetricDescriptorSnapshot = readWindowsHelperMetricDescriptorSnapshot,
 }: CatalogMetricDescriptorRuntimeCacheRefreshOptions): Promise<void> {
-    if (platform !== "win32") {
-        // Catalog metrics are currently backed only by the Windows helper.
-        // Non-Windows profiles can still contain catalog targets after sync or
-        // import, so keep the PI responsive without probing a source that
-        // cannot exist on this platform.
+    if (!supportsHelperSourceOnPlatform(platform)) {
+        // Catalog metrics are backed only by the helper source (Windows
+        // service, or the Linux helper daemon). Profiles synced or imported
+        // from helper-capable machines can still contain catalog targets on
+        // other platforms, so keep the PI responsive without probing a source
+        // that cannot exist here.
         await updateRuntimeCache({
             availableCatalogMetricDescriptors: [],
             catalogMetricDescriptorLoadState: "failed",
