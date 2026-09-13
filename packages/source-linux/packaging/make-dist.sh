@@ -51,6 +51,8 @@ cp "${here}/common/${name}" "${tree}/"
 chmod 0755 "${tree}/${name}"
 cp -r "${repo}/contracts/proto/shometrics" "${tree}/proto/"
 cp "${repo}/LICENSE" "${tree}/"
+# It carries a shebang, so lintian expects it executable.
+chmod 0755 "${tree}/server.mjs"
 
 # Same bytes for the same tag: sorted entries, no uids, commit date as mtime,
 # gzip without its own timestamp.
@@ -68,6 +70,11 @@ cp "${src}/package.json" "${src}/package-lock.json" "${vendor}/"
     cd "${vendor}"
     npm_config_cache="${stage}/npm-cache" npm ci --omit=dev --ignore-scripts --no-fund --no-audit >/dev/null
 )
+# Publishing metadata that npm ships and lintian rejects. None of it is read at
+# runtime, so drop it rather than carry overrides for it.
+find "${vendor}/node_modules" -type f \
+    \( -name ".npmignore" -o -name ".gitignore" -o -name ".gitattributes" \
+       -o -name ".travis.yml" -o -name ".editorconfig" \) -delete
 pack "${vendor}" node_modules "${out}/${name}-${forkver}-node-modules.tar.gz"
 
 # dpkg wants the upstream directory named after the Debian version, and Launchpad

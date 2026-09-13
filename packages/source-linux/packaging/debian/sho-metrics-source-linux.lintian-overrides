@@ -1,0 +1,8 @@
+# The launcher takes two flags, --check and --version, both covered by the
+# README and by its own header comment. A man page would say less than either.
+sho-metrics-source-linux: no-manual-page [usr/bin/sho-metrics-source-linux]
+
+# A code generator that ships inside @grpc/proto-loader. The daemon never runs
+# it, and patching file modes inside a vendored dependency would be worse than
+# the warning.
+sho-metrics-source-linux: script-not-executable [usr/lib/sho-metrics-source-linux/node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js]
