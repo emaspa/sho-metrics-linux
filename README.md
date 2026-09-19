@@ -30,8 +30,11 @@ the data comes from:
 - **AMD GPUs** through plain hwmon (amdgpu)
 - **In-game FPS via [MangoHud](https://github.com/flightlessmango/MangoHud)**:
   FPS, 1% lows, and frametime while a MangoHud-enabled game runs
+- **CPU package power via RAPL** (`/sys/class/powercap`), on both Intel and
+  AMD, once the packaged udev rule makes the energy counter readable
 - Built-in CPU, memory, disk, network, and custom HTTP JSON metrics, plus the
-  curated CPU/GPU widgets via stable aliases (`cpu.temp`, `gpu.power`, ...)
+  curated CPU/GPU widgets via stable aliases (`cpu.temp`, `cpu.power`,
+  `gpu.power`, ...)
 
 ## How it works
 
@@ -89,6 +92,11 @@ from a checkout of this repository:
 cd packages/source-linux
 ./install.sh
 ```
+
+The packages also install a udev rule that makes RAPL's energy counter
+readable, which is what `cpu.power` needs. `install.sh` asks before installing
+it. Any local account can read the counter afterwards, so skip it on a shared
+machine. The helper then drops `cpu.power` and everything else works.
 
 The distro packages ship the systemd user unit disabled, so enable it once
 (the checkout installer already does this):
