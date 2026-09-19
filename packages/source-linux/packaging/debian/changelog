@@ -1,3 +1,13 @@
+sho-metrics-source-linux (0.3.0+linux4-0ppa1~ubuntu26.04.1) resolute; urgency=medium
+
+  * Fix a restart loop on machines without lactd. The unit waited 90s for
+    /run/lactd.sock, exactly systemd's default TimeoutStartSec, so where the
+    socket never appeared start-pre was killed and Restart=on-failure looped
+    the unit forever. The wait is now gated on lactd being configured, and
+    TimeoutStartSec is raised above it.
+
+ -- Emanuele Sparvoli <sparvoli@gmail.com>  Sat, 19 Sep 2026 14:40:00 +0100
+
 sho-metrics-source-linux (0.3.0+linux3-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
   * Stop enabling the user service for every account on the machine.

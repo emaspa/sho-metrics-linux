@@ -2,12 +2,20 @@
 Description=Sho Metrics Linux hwmon helper (gRPC over unix socket)
 
 [Service]
-# Give lactd (system service) up to 90s to create its socket at boot so the first
-# sensor enumeration includes the NVIDIA GPU. Non-fatal: proceeds without it.
-ExecStartPre=/bin/sh -c 'i=0; while [ $i -lt 180 ] && [ ! -S /run/lactd.sock ]; do sleep 0.5; i=$((i+1)); done; exit 0'
+# The Stream Deck plugin fetches the sensor catalog once, so lactd (system
+# service, NVIDIA GPU sensors) has to be up before the first enumeration.
+# With two GPUs it has taken 51s. Wait for its socket, but only where lactd is
+# actually configured -- everywhere else this returns immediately instead of
+# delaying every boot by the full timeout.
+ExecStartPre=/bin/sh -c 'systemctl is-enabled --quiet lactd || systemctl is-active --quiet lactd || exit 0; i=0; while [ $i -lt 180 ] && [ ! -S /run/lactd.sock ]; do sleep 0.5; i=$((i+1)); done; exit 0'
+# Must stay above the 90s wait above. At the default (90s) systemd kills
+# start-pre at the exact moment the wait gives up, so a machine without lactd
+# fails to start and restart-loops forever.
+TimeoutStartSec=120
 Environment=SHOMETRICS_PROTO_DIR=@PROTO_DIR@
 ExecStart=@NODE@ @SERVER_PATH@
 Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=default.target

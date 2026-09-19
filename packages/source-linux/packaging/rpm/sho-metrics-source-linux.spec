@@ -1,8 +1,8 @@
-%global forkver 0.3.0-linux.3
+%global forkver 0.3.0-linux.4
 %global libdir  %{_prefix}/lib/%{name}
 
 Name:           sho-metrics-source-linux
-Version:        0.3.0^linux3
+Version:        0.3.0^linux4
 Release:        1%{?dist}
 Summary:        Linux hardware sensor helper daemon for the Sho Metrics OpenDeck plugin
 
@@ -107,5 +107,8 @@ SHOMETRICS_PROTO_DIR=%{buildroot}%{libdir}/proto \
 %{_userunitdir}/shometrics-linux-helper.service
 
 %changelog
+* Sat Sep 19 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux4-1
+- Fix a restart loop on machines without lactd (fork tag v0.3.0-linux.4)
+
 * Sun Sep 13 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux3-1
 - First COPR build of the Linux helper daemon (fork tag v0.3.0-linux.3)
