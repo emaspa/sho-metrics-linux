@@ -43,10 +43,11 @@ fi
 stage="$(mktemp -d)"
 trap 'rm -rf "${stage}"' EXIT
 tree="${stage}/${name}-${forkver}"
-mkdir -p "${tree}/proto" "${tree}/systemd" "${out}"
+mkdir -p "${tree}/proto" "${tree}/systemd" "${tree}/udev" "${out}"
 
 cp "${src}/server.mjs" "${src}/package.json" "${src}/package-lock.json" "${src}/README.md" "${tree}/"
 cp "${src}/systemd/shometrics-linux-helper.service" "${tree}/systemd/"
+cp "${src}/udev/60-sho-metrics-rapl.rules" "${tree}/udev/"
 cp "${here}/common/${name}" "${tree}/"
 chmod 0755 "${tree}/${name}"
 cp -r "${repo}/contracts/proto/shometrics" "${tree}/proto/"

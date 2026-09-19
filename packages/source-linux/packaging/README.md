@@ -50,6 +50,7 @@ Same paths on all three distros:
 | `/usr/lib/sho-metrics-source-linux/proto/shometrics/v1/` | the gRPC contract |
 | `/usr/bin/sho-metrics-source-linux` | launcher for manual runs |
 | `/usr/lib/systemd/user/shometrics-linux-helper.service` | the user unit |
+| `/usr/lib/udev/rules.d/60-sho-metrics-rapl.rules` | makes RAPL's energy counter readable, for `cpu.power` |
 
 Two constraints come from the plugin side and must not drift. The unit is named
 `shometrics-linux-helper.service`, because the property inspector reads that
@@ -66,6 +67,19 @@ systemctl --user enable --now shometrics-linux-helper.service
 That is deliberate. The daemon reads the desktop user's MangoHud logs and serves
 a socket the plugin opens as that same user, so a system service would serve the
 wrong account.
+
+### The udev rule
+
+`cpu.power` comes from RAPL, and the kernel ships `energy_uj` at mode 0400
+because sampling it fast is the PLATYPUS side channel (CVE-2020-8694). udev
+cannot set a mode on a sysfs attribute the way it can on a device node, so the
+rule shells out to `chmod` on `add|change`.
+
+All three packages install it without asking, because a package has no one to
+ask. `install.sh` prompts. Once it is in place any local account can read the
+counter. That is the desktop user on the machines this targets, and a real
+consideration on a shared one. Without the rule the helper reports `sysfs:rapl`
+as `NOT_INSTALLED` and drops `cpu.power`, and nothing else changes.
 
 ### How the contract gets found
 

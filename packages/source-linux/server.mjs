@@ -56,19 +56,6 @@ function chipDeviceId(hwmonPath) {
     }
 }
 
-function addCpuTempAlias(sensors) {
-    // stable alias cpu.temp -> k10temp Tctl (preferred) or its first temp
-    const candidates = [...sensors.values()].filter(s => s.hardwareName === "k10temp");
-    const source = candidates.find(s => s.sensorName === "Tctl") ?? candidates[0];
-    if (!source) return;
-    sensors.set("cpu.temp", {
-        ...source,
-        metricId: "cpu.temp",
-        metricIdKind: 1,
-        sensorName: "CPU Package",
-    });
-}
-
 function enumerateHwmonSensors(sensors) {
     let entries = [];
     try {
@@ -119,6 +106,179 @@ function enumerateHwmonSensors(sensors) {
                 },
             });
         }
+    }
+}
+
+// ------------------------------------------------------------------ CPU source
+
+// The plugin's curated CPU widgets ask for these five aliases by name. Each one
+// comes from a different place on Linux, and each is optional: a missing source
+// drops its alias rather than reporting a wrong number.
+const RAPL_ROOT = "/sys/class/powercap";
+// Package temperature lives on a different chip per vendor, and the package
+// sensor has a different label on each.
+const CPU_CHIPS = [
+    { chip: "k10temp", packageLabel: "Tctl" },
+    { chip: "coretemp", packageLabel: "Package id 0" },
+    { chip: "zenpower", packageLabel: "Tdie" },
+];
+
+function cpuModelName() {
+    try {
+        for (const line of readFileSync("/proc/cpuinfo", "utf8").split("\n")) {
+            const match = /^model name\s*:\s*(.+)$/.exec(line);
+            if (match) return match[1].trim();
+        }
+    } catch { /* no /proc/cpuinfo */ }
+    return undefined;
+}
+
+// Base (non-boost) clock in Hz. intel_pstate publishes it; amd-pstate does not,
+// so fall back to the frequency Intel writes into the model name. Never fall
+// back to cpuinfo_max_freq, which is the boost ceiling, not the base clock.
+function cpuBaseFrequency() {
+    try {
+        const kHz = Number(readTrimmed("/sys/devices/system/cpu/cpu0/cpufreq/base_frequency"));
+        if (Number.isFinite(kHz) && kHz > 0) return kHz * 1000;
+    } catch { /* not published by this cpufreq driver */ }
+    const match = /@\s*([\d.]+)\s*GHz/i.exec(cpuModelName() ?? "");
+    return match ? Number(match[1]) * 1e9 : undefined;
+}
+
+// Busy share of the aggregate line in /proc/stat, between consecutive reads.
+function createCpuUsageReader() {
+    const sample = () => {
+        const fields = readFileSync("/proc/stat", "utf8")
+            .split("\n", 1)[0].trim().split(/\s+/).slice(1).map(Number);
+        return {
+            total: fields.reduce((sum, field) => sum + field, 0),
+            idle: (fields[3] ?? 0) + (fields[4] ?? 0), // idle + iowait
+        };
+    };
+    let last;
+    try {
+        last = sample();
+    } catch {
+        return undefined;
+    }
+    let busyPercent;
+    return () => {
+        const now = sample();
+        const total = now.total - last.total;
+        if (total > 0) {
+            busyPercent = Math.min(100, Math.max(0, (1 - (now.idle - last.idle) / total) * 100));
+            last = now;
+        }
+        if (busyPercent === undefined) throw new Error("no interval yet");
+        return busyPercent;
+    };
+}
+
+// The package-0 RAPL zone, if this machine has one we are allowed to read.
+// energy_uj is mode 0400 on a stock kernel -- the PLATYPUS mitigation -- so the
+// packaged udev rule is what makes this readable to the desktop user.
+function raplPackageZone() {
+    let entries = [];
+    try {
+        entries = readdirSync(RAPL_ROOT);
+    } catch {
+        return undefined;
+    }
+    for (const entry of entries.sort()) {
+        if (!/^intel-rapl:\d+$/.test(entry)) continue; // the driver is named for Intel but backs AMD too
+        const zone = join(RAPL_ROOT, entry);
+        try {
+            if (readTrimmed(join(zone, "name")) !== "package-0") continue;
+            readTrimmed(join(zone, "energy_uj")); // proves it is readable, not just present
+            return zone;
+        } catch { /* wrong zone, or no permission */ }
+    }
+    return undefined;
+}
+
+// RAPL counts joules, not watts, so draw is the delta between two reads.
+function createRaplPowerReader() {
+    const zone = raplPackageZone();
+    if (!zone) return undefined;
+    const energy = () => Number(readTrimmed(join(zone, "energy_uj")));
+    let range = NaN;
+    try {
+        range = Number(readTrimmed(join(zone, "max_energy_range_uj")));
+    } catch { /* cannot correct for wraparound; readings across one are dropped */ }
+    let last;
+    try {
+        last = { uj: energy(), at: Date.now() };
+    } catch {
+        return undefined;
+    }
+    let watts;
+    return () => {
+        const uj = energy();
+        const at = Date.now();
+        const seconds = (at - last.at) / 1000;
+        // Below ~200ms the counter's resolution makes the quotient noise.
+        if (seconds >= 0.2) {
+            let delta = uj - last.uj;
+            if (delta < 0) delta = Number.isFinite(range) ? delta + range : NaN;
+            last = { uj, at };
+            if (Number.isFinite(delta)) watts = delta / 1e6 / seconds;
+        }
+        if (watts === undefined) throw new Error("no interval yet");
+        return watts;
+    };
+}
+
+// Both readers need a previous sample, so they are built once and kept: a fresh
+// one on every re-enumeration would start blind each minute.
+const cpuUsageReader = createCpuUsageReader();
+const raplPowerReader = createRaplPowerReader();
+
+function enumerateCpuSensors(sensors) {
+    const model = cpuModelName();
+    const base = {
+        hardwareId: "cpu",
+        hardwareName: model ?? "CPU",
+        hardwareType: "Cpu",
+        pollingGroupId: "cpu",
+    };
+    const alias = (metricId, sensorName, sensorType, unit, read, valueKind) => {
+        sensors.set(metricId, {
+            ...base, metricId, unit, sensorName, sensorType,
+            metricIdKind: 1, valueKind: valueKind ?? 1, read,
+        });
+    };
+
+    // Point the alias at whichever hwmon sensor the vendor's driver published,
+    // so it tracks the same reading as the raw key in the tree.
+    for (const { chip, packageLabel } of CPU_CHIPS) {
+        const candidates = [...sensors.values()].filter(s => s.hardwareName === chip);
+        const source = candidates.find(s => s.sensorName === packageLabel) ?? candidates[0];
+        if (!source) continue;
+        sensors.set("cpu.temp", {
+            ...source, metricId: "cpu.temp", metricIdKind: 1, sensorName: "CPU Package",
+        });
+        break;
+    }
+
+    if (model) alias("cpu.model", "CPU Model", "Text", 0, async () => model, 2);
+
+    const baseFrequency = cpuBaseFrequency();
+    if (baseFrequency) {
+        alias("cpu.base_frequency", "CPU Base Clock", "Clock", UNIT.HERTZ, async () => baseFrequency);
+    }
+
+    if (cpuUsageReader) {
+        alias("cpu.usage_percent", "CPU Total Load", "Load", UNIT.PERCENT, async () => cpuUsageReader());
+    }
+
+    // zenpower publishes CPU package power through hwmon and needs no extra
+    // permissions, so prefer it over RAPL where it is loaded.
+    const hwmonPower = [...sensors.values()].find(
+        s => CPU_CHIPS.some(c => c.chip === s.hardwareName) && s.unit === UNIT.WATTS);
+    if (hwmonPower) {
+        alias("cpu.power", "CPU Package Power", "Power", UNIT.WATTS, () => hwmonPower.read());
+    } else if (raplPowerReader) {
+        alias("cpu.power", "CPU Package Power", "Power", UNIT.WATTS, async () => raplPowerReader());
     }
 }
 
@@ -340,7 +500,7 @@ async function refreshedSensors() {
     enumerating ??= (async () => {
         const next = new Map();
         enumerateHwmonSensors(next);
-        addCpuTempAlias(next);
+        enumerateCpuSensors(next);
         try {
             enumerateMangohudSensors(next);
         } catch (e) {
@@ -400,6 +560,8 @@ const handlers = {
             component_statuses: [
                 { component: "sysfs:hwmon", state: 2 /* OK */ },
                 { component: "daemon:lactd", state: existsSync(LACT_SOCKET) ? 2 : 3 /* NOT_INSTALLED */ },
+                // Without the udev rule energy_uj stays root-only and cpu.power is absent.
+                { component: "sysfs:rapl", state: raplPowerReader ? 2 : 3 /* NOT_INSTALLED */ },
             ],
         });
     },

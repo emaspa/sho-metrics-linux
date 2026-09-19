@@ -4,6 +4,7 @@ PKG = sho-metrics-source-linux
 LIBDIR = /usr/lib/$(PKG)
 DESTDIR = debian/$(PKG)
 UNITDIR = /usr/lib/systemd/user
+UDEVDIR = /usr/lib/udev/rules.d
 
 %:
 	dh $@
@@ -44,3 +45,5 @@ override_dh_auto_install:
 	install -D -m 0755 $(PKG) $(DESTDIR)/usr/bin/$(PKG)
 	install -D -m 0644 debian/unit/shometrics-linux-helper.service \
 	    $(DESTDIR)$(UNITDIR)/shometrics-linux-helper.service
+	install -D -m 0644 udev/60-sho-metrics-rapl.rules \
+	    $(DESTDIR)$(UDEVDIR)/60-sho-metrics-rapl.rules

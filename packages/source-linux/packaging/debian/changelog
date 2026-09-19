@@ -1,3 +1,14 @@
+sho-metrics-source-linux (0.3.0+linux5-0ppa1~ubuntu26.04.1) resolute; urgency=medium
+
+  * Add cpu.power, cpu.usage_percent and cpu.model, which the plugin's curated
+    CPU widgets ask for but the helper never served. Package power comes from
+    RAPL, so the package now ships a udev rule making the energy counter
+    readable; without it cpu.power is simply absent.
+  * Resolve cpu.temp on Intel. It matched only k10temp, so the alias was never
+    created on coretemp machines and the widget read N/A.
+
+ -- Emanuele Sparvoli <sparvoli@gmail.com>  Sat, 19 Sep 2026 15:10:00 +0100
+
 sho-metrics-source-linux (0.3.0+linux4-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
   * Fix a restart loop on machines without lactd. The unit waited 90s for

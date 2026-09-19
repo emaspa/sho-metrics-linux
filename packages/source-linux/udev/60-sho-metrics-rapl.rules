@@ -1,0 +1,16 @@
+# CPU package power for the Sho Metrics helper.
+#
+# The helper runs as the desktop user, but the kernel ships RAPL's energy
+# counter as mode 0400, root-only: sampling it quickly leaks a side channel
+# (PLATYPUS, CVE-2020-8694). Reading it is the only portable way to get CPU
+# package power on both Intel and AMD, so this makes the counter readable.
+#
+# Note what that means: any local account can then observe package energy.
+# On a single-user desktop that is the machine's own user; on a shared or
+# multi-tenant box, do not install this rule.
+#
+# udev cannot set a mode on a sysfs attribute the way it can on a device
+# node, so this shells out. Remove the file, run `udevadm control --reload`
+# and reboot to undo it; the helper then reports sysfs:rapl as NOT_INSTALLED
+# and simply drops cpu.power.
+ACTION=="add|change", SUBSYSTEM=="powercap", KERNEL=="intel-rapl:*", RUN+="/bin/chmod 0444 %S%p/energy_uj"

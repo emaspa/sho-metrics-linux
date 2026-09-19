@@ -13,6 +13,30 @@ fi
 echo "==> Installing dependencies"
 npm install --omit=dev --no-fund --no-audit
 
+RULE_NAME="60-sho-metrics-rapl.rules"
+RULE_DEST="/etc/udev/rules.d/${RULE_NAME}"
+# CPU package power comes from RAPL, whose energy counter is root-only by
+# default. Installing the rule needs root, so it is offered rather than forced:
+# everything else works without it, minus cpu.power.
+if [[ -f "${RULE_DEST}" ]]; then
+    echo "==> udev rule already installed (${RULE_DEST})"
+elif [[ "${SHOMETRICS_SKIP_UDEV:-}" == "1" ]]; then
+    echo "==> Skipping the udev rule (SHOMETRICS_SKIP_UDEV=1); cpu.power will be unavailable"
+else
+    echo "==> CPU package power needs a udev rule to read RAPL:"
+    sed 's/^/      /' "udev/${RULE_NAME}"
+    echo "    It makes the RAPL energy counter readable by any local account."
+    read -r -p "    Install it to ${RULE_DEST}? [y/N] " reply
+    if [[ "${reply}" =~ ^[Yy]$ ]]; then
+        sudo install -Dm644 "udev/${RULE_NAME}" "${RULE_DEST}"
+        sudo udevadm control --reload
+        sudo udevadm trigger --subsystem-match=powercap
+        echo "    Installed."
+    else
+        echo "    Skipped; cpu.power will be unavailable."
+    fi
+fi
+
 UNIT_DIR="${HOME}/.config/systemd/user"
 UNIT_NAME="shometrics-linux-helper.service"
 mkdir -p "${UNIT_DIR}"

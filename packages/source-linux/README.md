@@ -25,8 +25,38 @@ Sensor sources:
 - **AMD GPUs** through plain hwmon (amdgpu)
 - **In-game FPS via [MangoHud](https://github.com/flightlessmango/MangoHud)**:
   FPS, 1% lows, and frametime while a MangoHud-enabled game runs
+- **CPU package power via RAPL** (`/sys/class/powercap`), on both Intel and
+  AMD. The kernel ships the energy counter root-only, so this one needs the
+  udev rule below
 - **Stable aliases** (`cpu.temp`, `gpu.temp`, `gpu.power`, ...) so the plugin's
   curated CPU/GPU widgets work
+
+The curated CPU widgets read five aliases:
+
+| Alias | Source | Needs |
+| --- | --- | --- |
+| `cpu.temp` | hwmon `k10temp` (AMD), `coretemp` (Intel), `zenpower` | nothing |
+| `cpu.usage_percent` | `/proc/stat` | nothing |
+| `cpu.model` | `/proc/cpuinfo` | nothing |
+| `cpu.base_frequency` | cpufreq `base_frequency` | `intel_pstate`; `amd-pstate` does not publish a base clock, so the alias is absent |
+| `cpu.power` | RAPL, or `zenpower` where loaded | the udev rule |
+
+A missing source drops its alias rather than reporting a wrong number. The
+widget shows N/A for that field and the rest keep working.
+
+### CPU power and the udev rule
+
+Reading RAPL fast enough to compute watts is the PLATYPUS side channel
+(CVE-2020-8694), so the kernel leaves `energy_uj` at mode 0400. The helper runs
+as your user and cannot read it. The packages install
+`/usr/lib/udev/rules.d/60-sho-metrics-rapl.rules`, which makes the counter
+readable. `install.sh` asks first.
+
+Any local account can then read the counter. On a single-user desktop that is
+your own user. On a shared machine, skip the rule. To undo it, delete the file,
+run `udevadm control --reload` and reboot. The helper then reports
+`sysfs:rapl` as `NOT_INSTALLED` and drops `cpu.power`, and nothing else
+changes. `SHOMETRICS_SKIP_UDEV=1 ./install.sh` skips the prompt.
 
 ## Install
 

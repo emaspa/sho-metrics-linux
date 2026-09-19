@@ -1,8 +1,8 @@
-%global forkver 0.3.0-linux.4
+%global forkver 0.3.0-linux.5
 %global libdir  %{_prefix}/lib/%{name}
 
 Name:           sho-metrics-source-linux
-Version:        0.3.0^linux4
+Version:        0.3.0^linux5
 Release:        1%{?dist}
 Summary:        Linux hardware sensor helper daemon for the Sho Metrics OpenDeck plugin
 
@@ -88,6 +88,8 @@ chmod 0755 %{buildroot}%{libdir}/server.mjs
 install -Dpm 0755 %{name} %{buildroot}%{_bindir}/%{name}
 install -Dpm 0644 shometrics-linux-helper.service \
     %{buildroot}%{_userunitdir}/shometrics-linux-helper.service
+install -Dpm 0644 udev/60-sho-metrics-rapl.rules \
+    %{buildroot}%{_udevrulesdir}/60-sho-metrics-rapl.rules
 
 %check
 SHOMETRICS_PROTO_DIR=%{buildroot}%{libdir}/proto \
@@ -105,8 +107,12 @@ SHOMETRICS_PROTO_DIR=%{buildroot}%{libdir}/proto \
 %{_bindir}/%{name}
 %{libdir}/
 %{_userunitdir}/shometrics-linux-helper.service
+%{_udevrulesdir}/60-sho-metrics-rapl.rules
 
 %changelog
+* Sat Sep 19 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux5-1
+- CPU package power, load, model; CPU temperature on Intel (fork tag v0.3.0-linux.5)
+
 * Sat Sep 19 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux4-1
 - Fix a restart loop on machines without lactd (fork tag v0.3.0-linux.4)
 
