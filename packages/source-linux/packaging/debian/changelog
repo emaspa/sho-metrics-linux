@@ -1,5 +1,9 @@
 sho-metrics-source-linux (0.3.0+linux7-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
+  * Read batteries and the mains adapter from /sys/class/power_supply as
+    linux-power.*: draw in watts, voltage, energy, health, cycle count and
+    charge status. A phone on a charging port carries scope=Device and is
+    skipped rather than reported as the machine's battery.
   * Add cpu.frequency, the live CPU clock. The helper published only
     cpu.base_frequency, a static number, so a clock readout never moved.
   * Publish per-core load and clock as linux-cpu.coreN.usage_percent and

@@ -111,7 +111,7 @@ SHOMETRICS_PROTO_DIR=%{buildroot}%{libdir}/proto \
 
 %changelog
 * Sun Sep 20 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux7-1
-- Live CPU clock and per-core load and clock (fork tag v0.3.0-linux.7)
+- Battery and mains sensors; live CPU clock and per-core load (fork tag v0.3.0-linux.7)
 
 * Sun Sep 20 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux6-1
 - AMD and Intel GPU sensors from /sys/class/drm (fork tag v0.3.0-linux.6)
