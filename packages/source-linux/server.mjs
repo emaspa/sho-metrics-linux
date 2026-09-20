@@ -8,6 +8,7 @@
 //   - lactd (NVIDIA GPU: hotspot, VRAM junction + per-chip temps, fan, power,
 //     clocks, VRAM usage, utilization) when /run/lactd.sock is available
 //   - /sys/class/drm (AMD and Intel GPU: load, temperature, power, clock, VRAM)
+//   - /sys/class/power_supply (battery draw, health, cycles; mains presence)
 //   - MangoHud CSV logs (in-game FPS, 1% lows, frametime)
 import grpc from "@grpc/grpc-js";
 import protoLoader from "@grpc/proto-loader";
@@ -545,6 +546,155 @@ async function enumerateLactSensors(sensors) {
 }
 
 
+// -------------------------------------------------------- power supply source
+
+// Battery draw, health and cycle count. The plugin already reads the charge
+// percentage itself through systeminformation, so this publishes the readings
+// it has no equivalent for rather than competing for system.battery_percent.
+const POWER_SUPPLY_ROOT = "/sys/class/power_supply";
+
+function powerSupplyValue(dir, file) {
+    const raw = Number(readTrimmed(join(dir, file)));
+    if (!Number.isFinite(raw)) throw new Error("not a number");
+    return raw;
+}
+
+function powerSupplyOptional(dir, file) {
+    try {
+        return powerSupplyValue(dir, file);
+    } catch {
+        return undefined;
+    }
+}
+
+// A battery reports energy in uWh, or, on drivers that track charge instead,
+// coulombs in uAh that only become watt-hours once multiplied by the voltage.
+function batteryEnergy(dir, which) {
+    const energy = powerSupplyOptional(dir, `energy_${which}`);
+    if (energy !== undefined) return energy / 1e6;
+    const charge = powerSupplyOptional(dir, `charge_${which}`);
+    const voltage = powerSupplyOptional(dir, "voltage_now");
+    if (charge === undefined || voltage === undefined) return undefined;
+    return (charge * voltage) / 1e12;
+}
+
+// The supplies worth reporting: the machine's own batteries and its mains
+// adapter. A phone on a charging port also reports type=Battery, and is told
+// apart by scope=Device.
+function powerSupplies() {
+    let entries = [];
+    try {
+        entries = readdirSync(POWER_SUPPLY_ROOT).sort();
+    } catch {
+        return [];
+    }
+    const supplies = [];
+    for (const entry of entries) {
+        const dir = join(POWER_SUPPLY_ROOT, entry);
+        let type;
+        try {
+            type = readTrimmed(join(dir, "type"));
+        } catch {
+            continue;
+        }
+        let scope;
+        try {
+            scope = readTrimmed(join(dir, "scope"));
+        } catch { /* absent on a system supply, which is the common case */ }
+        if (scope === "Device") continue; // a peripheral's own battery, not this machine's
+        if (type === "Battery" || type === "Mains") supplies.push({ name: entry, dir, type });
+    }
+    return supplies;
+}
+
+function enumeratePowerSupplySensors(sensors) {
+    for (const supply of powerSupplies()) {
+        const base = {
+            hardwareId: `power-supply@${supply.name}`,
+            hardwareName: supply.name,
+            hardwareType: supply.type === "Mains" ? "Mains" : "Battery",
+            pollingGroupId: `power-supply@${supply.name}`,
+        };
+        const add = (key, sensorName, sensorType, unit, read, valueKind) => {
+            const metricId = `linux-power.${supply.name}.${key}`;
+            sensors.set(metricId, {
+                ...base, metricId, unit, sensorName, sensorType,
+                metricIdKind: 2, valueKind: valueKind ?? 1, read,
+            });
+        };
+        const publish = (key, sensorName, sensorType, unit, compute, valueKind) => {
+            if (compute() === undefined) return; // this supply does not report it
+            add(key, sensorName, sensorType, unit, async () => {
+                const value = compute();
+                if (value === undefined) throw new Error("missing");
+                return value;
+            }, valueKind);
+        };
+
+        if (supply.type === "Mains") {
+            publish("online", `${supply.name} Online`, "Control", UNIT.UNITLESS,
+                () => powerSupplyOptional(supply.dir, "online"));
+            continue;
+        }
+
+        publish("capacity", "Battery Charge", "Level", UNIT.PERCENT,
+            () => powerSupplyOptional(supply.dir, "capacity"));
+
+        // power_now is what most drivers publish; the rest leave it to be
+        // worked out from the current and the voltage. Charging and
+        // discharging differ only in sign, so report the magnitude.
+        publish("power", "Battery Power", "Power", UNIT.WATTS, () => {
+            const power = powerSupplyOptional(supply.dir, "power_now");
+            if (power !== undefined) return Math.abs(power) / 1e6;
+            const current = powerSupplyOptional(supply.dir, "current_now");
+            const voltage = powerSupplyOptional(supply.dir, "voltage_now");
+            if (current === undefined || voltage === undefined) return undefined;
+            return Math.abs(current * voltage) / 1e12;
+        });
+
+        publish("voltage", "Battery Voltage", "Voltage", UNIT.VOLTS,
+            () => {
+                const voltage = powerSupplyOptional(supply.dir, "voltage_now");
+                return voltage === undefined ? undefined : voltage / 1e6;
+            });
+
+        publish("energy", "Battery Energy", "Energy", UNIT.WATT_HOURS,
+            () => batteryEnergy(supply.dir, "now"));
+        publish("energy_full", "Battery Energy Full", "Energy", UNIT.WATT_HOURS,
+            () => batteryEnergy(supply.dir, "full"));
+
+        // How much of the original capacity survives, which is the number that
+        // tells you the battery is wearing out.
+        publish("health", "Battery Health", "Level", UNIT.PERCENT, () => {
+            const full = batteryEnergy(supply.dir, "full");
+            const design = batteryEnergy(supply.dir, "full_design");
+            if (full === undefined || !design) return undefined;
+            return (full / design) * 100;
+        });
+
+        publish("cycle_count", "Battery Cycles", "Factor", UNIT.UNITLESS, () => {
+            const cycles = powerSupplyOptional(supply.dir, "cycle_count");
+            return cycles === undefined || cycles <= 0 ? undefined : cycles;
+        });
+
+        // Tenths of a degree, unlike hwmon's thousandths.
+        publish("temp", "Battery", "Temperature", UNIT.CELSIUS, () => {
+            const temp = powerSupplyOptional(supply.dir, "temp");
+            return temp === undefined ? undefined : temp / 10;
+        });
+
+        let status;
+        try {
+            status = readTrimmed(join(supply.dir, "status"));
+        } catch { /* not published */ }
+        if (status !== undefined) {
+            add("status", "Battery Status", "Text", 0,
+                async () => readTrimmed(join(supply.dir, "status")), 2);
+        }
+    }
+}
+
+
 // ------------------------------------------------------------- DRM GPU source
 
 // Everything LACT does not cover: AMD through amdgpu's sysfs, Intel through
@@ -920,6 +1070,11 @@ async function refreshedSensors() {
         enumerateHwmonSensors(next);
         enumerateCpuSensors(next);
         try {
+            enumeratePowerSupplySensors(next);
+        } catch (e) {
+            console.error("power supply enumeration failed:", e.message);
+        }
+        try {
             enumerateMangohudSensors(next);
         } catch (e) {
             console.error("mangohud enumeration failed:", e.message);
@@ -987,6 +1142,7 @@ const handlers = {
                 // Without the udev rule energy_uj stays root-only and cpu.power is absent.
                 { component: "sysfs:rapl", state: raplPowerReader ? 2 : 3 /* NOT_INSTALLED */ },
                 { component: "sysfs:drm", state: drmCards().some(c => c.driver !== "nvidia") ? 2 : 3 },
+                { component: "sysfs:power_supply", state: powerSupplies().length ? 2 : 3 },
             ],
         });
     },

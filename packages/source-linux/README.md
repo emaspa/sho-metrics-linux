@@ -8,6 +8,7 @@ serves hardware sensors to the Sho Metrics plugin over the
 Sho Metrics plugin (OpenDeck)  --gRPC over unix socket-->  server.mjs
     |                                                          |- /sys/class/hwmon
  OpenDeck                                                      |- /sys/class/drm
+                                                               |- /sys/class/power_supply
                                                                |- /sys/class/powercap
                                                                |- lactd (NVIDIA)
                                                                |- ~/mangohud_logs
@@ -27,6 +28,9 @@ Sensor sources:
 - **AMD and Intel GPUs** from `/sys/class/drm`: load, temperature, power,
   core clock and, where the card has dedicated memory, VRAM usage. Plain
   world-readable files, so no daemon and no added privileges
+- **Batteries and mains** from `/sys/class/power_supply`: draw in watts,
+  voltage, energy, health, cycle count, charge status, and whether the adapter
+  is plugged in
 - **In-game FPS via [MangoHud](https://github.com/flightlessmango/MangoHud)**:
   FPS, 1% lows, and frametime while a MangoHud-enabled game runs
 - **CPU package power via RAPL** (`/sys/class/powercap`), on both Intel and
@@ -75,6 +79,27 @@ engine spent power gated. `intel_gpu_top` reads the same counter through the
 i915 perf PMU, which needs `kernel.perf_event_paranoid` lowered. The sysfs file
 needs nothing.
 
+### Batteries
+
+A laptop's battery is published under `linux-power.BAT0.*`: `power` in watts,
+`capacity`, `voltage`, `energy`, `energy_full`, `health`, `cycle_count`,
+`temp` and a `status` string. The mains adapter gets `linux-power.AC.online`.
+Each reading appears only where the driver publishes it, so a battery that
+reports no cycle count simply has no cycle count metric.
+
+The plugin reads the charge percentage itself through systeminformation and
+serves it as `system.battery_percent`, so the helper does not compete for that
+alias and publishes the readings the plugin has no equivalent for.
+
+Drivers disagree on units. Most report energy in uWh. Some track charge in uAh
+instead, which only becomes watt-hours once multiplied by the voltage, and the
+helper handles both. Charging and discharging differ only in the sign of
+`current_now`, so power is reported as a magnitude.
+
+A phone plugged into a charging port also appears here as `type=Battery`. Those
+carry `scope=Device` and are skipped, so your handset's charge never gets
+reported as the machine's.
+
 ### CPU power and the udev rule
 
 Reading RAPL fast enough to compute watts is the PLATYPUS side channel
@@ -90,7 +115,8 @@ Any local account can then read the counter. On a single-user desktop that is
 your own user. On a shared machine, skip the rule. To undo it, delete the file,
 run `udevadm control --reload` and reboot. The helper then reports
 `sysfs:rapl` as `NOT_INSTALLED` and drops `cpu.power` and, on Intel,
-`gpu.power`; nothing else changes. `SHOMETRICS_SKIP_UDEV=1 ./install.sh` skips the prompt.
+`gpu.power`; nothing else changes. `SHOMETRICS_SKIP_UDEV=1 ./install.sh` skips
+the prompt.
 
 ## Install
 

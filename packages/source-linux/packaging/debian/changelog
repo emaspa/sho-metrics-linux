@@ -1,3 +1,13 @@
+sho-metrics-source-linux (0.3.0+linux7-0ppa1~ubuntu26.04.1) resolute; urgency=medium
+
+  * Add cpu.frequency, the live CPU clock. The helper published only
+    cpu.base_frequency, a static number, so a clock readout never moved.
+  * Publish per-core load and clock as linux-cpu.coreN.usage_percent and
+    linux-cpu.coreN.frequency, read from the /proc/stat lines the aggregate
+    reader already parsed and discarded.
+
+ -- Emanuele Sparvoli <sparvoli@gmail.com>  Sun, 20 Sep 2026 10:05:00 +0100
+
 sho-metrics-source-linux (0.3.0+linux6-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
   * Serve AMD and Intel GPU sensors from /sys/class/drm. The curated GPU

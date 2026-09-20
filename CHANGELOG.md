@@ -6,8 +6,13 @@ All notable changes to ShoMetrics will be documented in this file.
 
 ### Linux helper
 
-Released as fork tags `v0.3.0-linux.4` through `v0.3.0-linux.6`.
+Released as fork tags `v0.3.0-linux.4` through `v0.3.0-linux.7`.
 
+- Read batteries and the mains adapter from `/sys/class/power_supply` as
+  `linux-power.*`: draw in watts, voltage, energy, health, cycle count and
+  charge status. Energy in uWh and charge in uAh are both handled, and a phone
+  on a charging port is skipped on `scope=Device` rather than reported as the
+  machine's battery. The plugin keeps serving `system.battery_percent` itself.
 - Add `cpu.frequency`, the live clock. The helper published only
   `cpu.base_frequency`, a static number, so a clock readout never moved.
   Per-core load and clock arrive as `linux-cpu.coreN.*`, read from the

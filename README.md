@@ -29,6 +29,8 @@ the data comes from:
   VRAM usage, utilization
 - **AMD and Intel GPUs** from `/sys/class/drm`: load, temperature, power, core
   clock, and VRAM on cards that have their own memory
+- **Batteries and mains** from `/sys/class/power_supply`: draw in watts,
+  health, cycle count, and charge status
 - **In-game FPS via [MangoHud](https://github.com/flightlessmango/MangoHud)**:
   FPS, 1% lows, and frametime while a MangoHud-enabled game runs
 - **CPU package power via RAPL** (`/sys/class/powercap`), on both Intel and
@@ -43,6 +45,7 @@ the data comes from:
 Sho Metrics Linux plugin (OpenDeck)  --gRPC over unix socket-->  packages/source-linux
         |                                                               |- /sys/class/hwmon
      OpenDeck                                                           |- /sys/class/drm
+                                                                        |- /sys/class/power_supply
                                                                         |- /sys/class/powercap
                                                                         |- lactd (NVIDIA)
                                                                         |- ~/mangohud_logs
