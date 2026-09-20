@@ -8,6 +8,10 @@ All notable changes to ShoMetrics will be documented in this file.
 
 Released as fork tags `v0.3.0-linux.4` through `v0.3.0-linux.6`.
 
+- Add `cpu.frequency`, the live clock. The helper published only
+  `cpu.base_frequency`, a static number, so a clock readout never moved.
+  Per-core load and clock arrive as `linux-cpu.coreN.*`, read from the
+  `/proc/stat` lines the aggregate reader already parsed and discarded.
 - Serve AMD and Intel GPU sensors from `/sys/class/drm`. The curated GPU
   widgets resolved only against an NVIDIA card managed by `lactd`, so every
   other machine read N/A for load, temperature, power and VRAM. Where LACT is

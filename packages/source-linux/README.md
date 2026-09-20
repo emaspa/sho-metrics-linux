@@ -45,6 +45,12 @@ The curated CPU widgets read five aliases:
 | `cpu.base_frequency` | cpufreq `base_frequency` | `intel_pstate`; `amd-pstate` does not publish a base clock, so the alias is absent |
 | `cpu.power` | RAPL, or `zenpower` where loaded | the udev rule |
 
+`cpu.frequency` is published alongside them. It is the live clock, averaged
+over the cores cpufreq reports one for, and it reads `scaling_cur_freq`,
+falling back to `cpuinfo_cur_freq`, which some drivers keep root-only.
+Per-core load and clock are published as `linux-cpu.coreN.usage_percent` and
+`linux-cpu.coreN.frequency` for the hardware tree.
+
 A missing source drops its alias rather than reporting a wrong number. The
 widget shows N/A for that field and the rest keep working.
 

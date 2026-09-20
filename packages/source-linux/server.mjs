@@ -147,6 +147,106 @@ function cpuBaseFrequency() {
     return match ? Number(match[1]) * 1e9 : undefined;
 }
 
+// Current core clock in Hz. scaling_cur_freq is what the governor last asked
+// for and is world-readable; cpuinfo_cur_freq asks the hardware and some
+// drivers keep it root-only, so it is only a fallback.
+function cpuFrequencyPath(core) {
+    for (const file of ["scaling_cur_freq", "cpuinfo_cur_freq"]) {
+        const path = `/sys/devices/system/cpu/cpu${core}/cpufreq/${file}`;
+        try {
+            readTrimmed(path); // proves it is readable, not just present
+            return path;
+        } catch { /* absent, or root-only on this driver */ }
+    }
+    return undefined;
+}
+
+// The cores cpufreq publishes a clock for, in order.
+function cpuFrequencyPaths() {
+    const paths = new Map();
+    let entries = [];
+    try {
+        entries = readdirSync("/sys/devices/system/cpu");
+    } catch {
+        return paths;
+    }
+    const cores = entries
+        .map(entry => /^cpu(\d+)$/.exec(entry))
+        .filter(Boolean)
+        .map(match => Number(match[1]))
+        .sort((a, b) => a - b);
+    for (const core of cores) {
+        const path = cpuFrequencyPath(core);
+        if (path) paths.set(core, path);
+    }
+    return paths;
+}
+
+function readCpuFrequency(path) {
+    const kHz = Number(readTrimmed(path));
+    if (!Number.isFinite(kHz) || kHz <= 0) throw new Error("no clock");
+    return kHz * 1000;
+}
+
+// Busy share of each per-core line in /proc/stat. One sample serves every core
+// in a poll pass: re-reading per metric would shrink each delta to noise.
+function createCpuCoreUsageReader() {
+    const sampleAll = () => {
+        const cores = new Map();
+        for (const line of readFileSync("/proc/stat", "utf8").split("\n")) {
+            const match = /^cpu(\d+)\s+(.*)$/.exec(line);
+            if (!match) continue;
+            const fields = match[2].trim().split(/\s+/).map(Number);
+            cores.set(Number(match[1]), {
+                total: fields.reduce((sum, field) => sum + field, 0),
+                idle: (fields[3] ?? 0) + (fields[4] ?? 0), // idle + iowait
+            });
+        }
+        return cores;
+    };
+    let last;
+    let lastAt = 0;
+    try {
+        last = sampleAll();
+        lastAt = Date.now();
+    } catch {
+        return undefined;
+    }
+    if (last.size === 0) return undefined;
+    const percents = new Map();
+    const refresh = () => {
+        const at = Date.now();
+        // Below ~200ms the jiffy counters have not moved enough to divide.
+        if (at - lastAt < 200) return;
+        let now;
+        try {
+            now = sampleAll();
+        } catch {
+            return;
+        }
+        for (const [core, current] of now) {
+            const previous = last.get(core);
+            if (!previous) continue;
+            const total = current.total - previous.total;
+            const idle = current.idle - previous.idle;
+            if (total > 0) {
+                percents.set(core, Math.min(100, Math.max(0, (1 - idle / total) * 100)));
+            }
+        }
+        last = now;
+        lastAt = at;
+    };
+    return {
+        cores: () => [...last.keys()].sort((a, b) => a - b),
+        read: core => {
+            refresh();
+            const percent = percents.get(core);
+            if (percent === undefined) throw new Error("no interval yet");
+            return percent;
+        },
+    };
+}
+
 // Busy share of the aggregate line in /proc/stat, between consecutive reads.
 function createCpuUsageReader() {
     const sample = () => {
@@ -248,6 +348,7 @@ function createRaplPowerReader(zone) {
 // Both readers need a previous sample, so they are built once and kept: a fresh
 // one on every re-enumeration would start blind each minute.
 const cpuUsageReader = createCpuUsageReader();
+const cpuCoreUsageReader = createCpuCoreUsageReader();
 const raplPowerReader = createRaplPowerReader(raplZoneNamed("package-0"));
 // Intel splits the package into rails; "uncore" is the integrated GPU's share.
 const raplUncoreReader = createRaplPowerReader(raplZoneNamed("uncore"));
@@ -284,6 +385,42 @@ function enumerateCpuSensors(sensors) {
     const baseFrequency = cpuBaseFrequency();
     if (baseFrequency) {
         alias("cpu.base_frequency", "CPU Base Clock", "Clock", UNIT.HERTZ, async () => baseFrequency);
+    }
+
+    // The live clock, which the base clock alias above deliberately is not.
+    const frequencyPaths = cpuFrequencyPaths();
+    if (frequencyPaths.size) {
+        alias("cpu.frequency", "CPU Clock", "Clock", UNIT.HERTZ, async () => {
+            let sum = 0;
+            let counted = 0;
+            for (const path of frequencyPaths.values()) {
+                try {
+                    sum += readCpuFrequency(path);
+                    counted++;
+                } catch { /* core offline since enumeration */ }
+            }
+            if (!counted) throw new Error("no clock");
+            return sum / counted;
+        });
+    }
+
+    // Per-core load and clock, for the hardware tree rather than the curated
+    // widgets. Both are native ids, so they sort under the CPU in the picker.
+    const core = (metricId, sensorName, sensorType, unit, read) => {
+        sensors.set(metricId, {
+            ...base, metricId, unit, sensorName, sensorType,
+            metricIdKind: 2, valueKind: 1, read,
+        });
+    };
+    for (const [index, path] of frequencyPaths) {
+        core(`linux-cpu.core${index}.frequency`, `Core ${index} Clock`, "Clock", UNIT.HERTZ,
+            async () => readCpuFrequency(path));
+    }
+    if (cpuCoreUsageReader) {
+        for (const index of cpuCoreUsageReader.cores()) {
+            core(`linux-cpu.core${index}.usage_percent`, `Core ${index} Load`, "Load", UNIT.PERCENT,
+                async () => cpuCoreUsageReader.read(index));
+        }
     }
 
     if (cpuUsageReader) {
