@@ -19,7 +19,7 @@ source=("${pkgname}-${_forkver}.tar.gz::${url}/releases/download/v${_forkver}/${
 # The checksum of the published release asset. After bumping _forkver, run
 # updpkgsums once the asset is uploaded, then regenerate .SRCINFO with
 # `makepkg --printsrcinfo > .SRCINFO`.
-sha256sums=('0000000000000000000000000000000000000000000000000000000000000000')
+sha256sums=('cae904078afdef82b6e6ab7035452d180b48964d036e72b2c5ee9068a161654c')
 
 _libdir="/usr/lib/${pkgname}"
 
