@@ -6,8 +6,18 @@ All notable changes to ShoMetrics will be documented in this file.
 
 ### Linux helper
 
-Released as fork tags `v0.3.0-linux.4` and `v0.3.0-linux.5`.
+Released as fork tags `v0.3.0-linux.4` through `v0.3.0-linux.6`.
 
+- Serve AMD and Intel GPU sensors from `/sys/class/drm`. The curated GPU
+  widgets resolved only against an NVIDIA card managed by `lactd`, so every
+  other machine read N/A for load, temperature, power and VRAM. Where LACT is
+  running it keeps the aliases, and with two GPUs the discrete one takes them.
+- Read Intel integrated GPU load from RC6 residency and its power from the RAPL
+  `uncore` rail. Both are plain sysfs files, so neither needs the privileged
+  perf counter `intel_gpu_top` uses for the same reading. An integrated GPU has
+  no VRAM to report, so those aliases stay absent rather than reporting system
+  memory.
+- Expose hwmon `freqN_input`, which is where amdgpu publishes the core clock.
 - Serve the CPU metrics the plugin's curated widgets ask for. `cpu.power`,
   `cpu.usage_percent` and `cpu.model` did not exist, and `cpu.temp` resolved
   only on AMD, so the multi-metric CPU widget read N/A on Intel and showed no

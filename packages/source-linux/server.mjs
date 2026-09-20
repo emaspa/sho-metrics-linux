@@ -7,6 +7,7 @@
 //   - /sys/class/hwmon (temperatures, fans, voltages, currents, power, energy)
 //   - lactd (NVIDIA GPU: hotspot, VRAM junction + per-chip temps, fan, power,
 //     clocks, VRAM usage, utilization) when /run/lactd.sock is available
+//   - /sys/class/drm (AMD and Intel GPU: load, temperature, power, clock, VRAM)
 //   - MangoHud CSV logs (in-game FPS, 1% lows, frametime)
 import grpc from "@grpc/grpc-js";
 import protoLoader from "@grpc/proto-loader";
@@ -38,6 +39,7 @@ const HWMON_TYPES = {
     in:       { unit: UNIT.VOLTS,      divisor: 1000,  label: "Voltage",     lhm: "Voltage" },
     curr:     { unit: UNIT.AMPERES,    divisor: 1000,  label: "Current",     lhm: "Current" },
     power:    { unit: UNIT.WATTS,      divisor: 1e6,   label: "Power",       lhm: "Power" },
+    freq:     { unit: UNIT.HERTZ,      divisor: 1,     label: "Clock",       lhm: "Clock" },
     energy:   { unit: UNIT.WATT_HOURS, divisor: 3.6e9, label: "Energy",      lhm: "Energy" },
     humidity: { unit: UNIT.PERCENT,    divisor: 1000,  label: "Humidity",    lhm: "Humidity" },
 };
@@ -80,7 +82,7 @@ function enumerateHwmonSensors(sensors) {
             continue;
         }
         for (const file of files) {
-            const m = file.match(/^(temp|fan|in|curr|power|energy|humidity)(\d+)_input$/);
+            const m = file.match(/^(temp|fan|in|curr|power|energy|humidity|freq)(\d+)_input$/);
             if (!m) continue;
             const [, kind, index] = m;
             const type = HWMON_TYPES[kind];
@@ -174,31 +176,46 @@ function createCpuUsageReader() {
     };
 }
 
-// The package-0 RAPL zone, if this machine has one we are allowed to read.
+// The RAPL zone with the given name, if this machine has one we are allowed to
+// read. Packages are top-level (intel-rapl:N); the rails they are split into are
+// nested one level below (intel-rapl:N:M) -- "core" is the CPU cores and
+// "uncore" is the integrated GPU on Intel client parts.
 // energy_uj is mode 0400 on a stock kernel -- the PLATYPUS mitigation -- so the
 // packaged udev rule is what makes this readable to the desktop user.
-function raplPackageZone() {
-    let entries = [];
+function raplZoneNamed(name) {
+    const readable = zone => {
+        try {
+            if (readTrimmed(join(zone, "name")) !== name) return false;
+            readTrimmed(join(zone, "energy_uj")); // proves it is readable, not just present
+            return true;
+        } catch {
+            return false; // wrong zone, or no permission
+        }
+    };
+    let packages = [];
     try {
-        entries = readdirSync(RAPL_ROOT);
+        // the driver is named for Intel but backs AMD too
+        packages = readdirSync(RAPL_ROOT).filter(e => /^intel-rapl:\d+$/.test(e)).sort();
     } catch {
         return undefined;
     }
-    for (const entry of entries.sort()) {
-        if (!/^intel-rapl:\d+$/.test(entry)) continue; // the driver is named for Intel but backs AMD too
+    for (const entry of packages) {
         const zone = join(RAPL_ROOT, entry);
+        if (readable(zone)) return zone;
+        let rails = [];
         try {
-            if (readTrimmed(join(zone, "name")) !== "package-0") continue;
-            readTrimmed(join(zone, "energy_uj")); // proves it is readable, not just present
-            return zone;
-        } catch { /* wrong zone, or no permission */ }
+            rails = readdirSync(zone).filter(e => /^intel-rapl:\d+:\d+$/.test(e)).sort();
+        } catch { /* no sub-zones on this package */ }
+        for (const rail of rails) {
+            const subZone = join(zone, rail);
+            if (readable(subZone)) return subZone;
+        }
     }
     return undefined;
 }
 
 // RAPL counts joules, not watts, so draw is the delta between two reads.
-function createRaplPowerReader() {
-    const zone = raplPackageZone();
+function createRaplPowerReader(zone) {
     if (!zone) return undefined;
     const energy = () => Number(readTrimmed(join(zone, "energy_uj")));
     let range = NaN;
@@ -231,7 +248,9 @@ function createRaplPowerReader() {
 // Both readers need a previous sample, so they are built once and kept: a fresh
 // one on every re-enumeration would start blind each minute.
 const cpuUsageReader = createCpuUsageReader();
-const raplPowerReader = createRaplPowerReader();
+const raplPowerReader = createRaplPowerReader(raplZoneNamed("package-0"));
+// Intel splits the package into rails; "uncore" is the integrated GPU's share.
+const raplUncoreReader = createRaplPowerReader(raplZoneNamed("uncore"));
 
 function enumerateCpuSensors(sensors) {
     const model = cpuModelName();
@@ -389,6 +408,268 @@ async function enumerateLactSensors(sensors) {
 }
 
 
+// ------------------------------------------------------------- DRM GPU source
+
+// Everything LACT does not cover: AMD through amdgpu's sysfs, Intel through
+// i915/xe. Both are plain world-readable files, so this source needs no
+// privileges and no daemon.
+const DRM_ROOT = "/sys/class/drm";
+const PCI_IDS = "/usr/share/hwdata/pci.ids";
+
+// Marketing name for a PCI id, e.g. 8086:9a49 -> "TigerLake-LP GT2 [Iris Xe
+// Graphics]". hwdata is not installed everywhere, hence the caller's fallback.
+// The file is megabytes of text and a card never changes identity, so each
+// lookup is kept rather than repeated on every re-enumeration.
+const pciNames = new Map();
+function pciDeviceName(vendorId, deviceId) {
+    const key = `${vendorId}:${deviceId}`;
+    if (!pciNames.has(key)) pciNames.set(key, readPciDeviceName(vendorId, deviceId));
+    return pciNames.get(key);
+}
+
+function readPciDeviceName(vendorId, deviceId) {
+    let text;
+    try {
+        text = readFileSync(PCI_IDS, "utf8");
+    } catch {
+        return undefined;
+    }
+    let inVendor = false;
+    for (const line of text.split("\n")) {
+        if (!line || line.startsWith("#")) continue;
+        if (!line.startsWith("\t")) {
+            if (inVendor) return undefined; // left our vendor without a match
+            inVendor = line.slice(0, 4).toLowerCase() === vendorId;
+            continue;
+        }
+        if (!inVendor || line.startsWith("\t\t")) continue;
+        const device = line.slice(1);
+        if (device.slice(0, 4).toLowerCase() === deviceId) return device.slice(4).trim();
+    }
+    return undefined;
+}
+
+// The cards in /sys/class/drm, minus the connectors (card0-DP-1 and friends).
+function drmCards() {
+    let entries = [];
+    try {
+        entries = readdirSync(DRM_ROOT);
+    } catch {
+        return [];
+    }
+    const cards = [];
+    for (const entry of entries.sort()) {
+        if (!/^card\d+$/.test(entry)) continue;
+        const path = join(DRM_ROOT, entry);
+        const device = join(path, "device");
+        let driver;
+        try {
+            driver = basename(readlinkSync(join(device, "driver")));
+        } catch {
+            continue; // no bound driver, nothing to read
+        }
+        const hex = file => {
+            try {
+                return readTrimmed(join(device, file)).replace(/^0x/, "").toLowerCase();
+            } catch {
+                return undefined;
+            }
+        };
+        cards.push({ card: entry, path, device, driver, vendor: hex("vendor"), deviceId: hex("device") });
+    }
+    return cards;
+}
+
+// A counter of cumulative milliseconds, as a share of the wall time between two
+// reads. i915 publishes RC6 residency -- the time the render engine spent power
+// gated -- which inverts into the same utilisation figure the i915 PMU reports,
+// without needing perf_event_open or a relaxed kernel.perf_event_paranoid.
+function createResidencyReader(path) {
+    const residency = () => Number(readTrimmed(path));
+    let last;
+    try {
+        last = { ms: residency(), at: Date.now() };
+    } catch {
+        return undefined;
+    }
+    let percent;
+    return () => {
+        const ms = residency();
+        const at = Date.now();
+        const elapsed = at - last.at;
+        // Below ~200ms the counter's resolution makes the quotient noise.
+        if (elapsed >= 200) {
+            const delta = ms - last.ms;
+            last = { ms, at };
+            if (delta >= 0) percent = Math.min(100, Math.max(0, 100 - (delta / elapsed) * 100));
+        }
+        if (percent === undefined) throw new Error("no interval yet");
+        return percent;
+    };
+}
+
+// i915 keeps RC6 next to the card, newer kernels moved it under gt/gtN, and xe
+// does not publish it at all.
+function rc6ResidencyPath(card) {
+    const candidates = [join(card.path, "power", "rc6_residency_ms")];
+    try {
+        for (const gt of readdirSync(join(card.path, "gt")).sort()) {
+            candidates.push(join(card.path, "gt", gt, "rc6_residency_ms"));
+        }
+    } catch { /* no gt/ layout on this kernel */ }
+    return candidates.find(existsSync);
+}
+
+// Core clock in Hz. i915 exposes it on the card, xe under device/tileN/gtN/freqN.
+function drmCoreClockPath(card) {
+    const candidates = [
+        join(card.path, "gt_act_freq_mhz"),
+        join(card.path, "gt_cur_freq_mhz"),
+    ];
+    try {
+        for (const tile of readdirSync(card.device).filter(e => /^tile\d+$/.test(e)).sort()) {
+            for (const gt of readdirSync(join(card.device, tile)).filter(e => /^gt\d+$/.test(e)).sort()) {
+                const gtPath = join(card.device, tile, gt);
+                for (const freq of readdirSync(gtPath).filter(e => /^freq\d+$/.test(e)).sort()) {
+                    candidates.push(join(gtPath, freq, "act_freq"), join(gtPath, freq, "cur_freq"));
+                }
+            }
+        }
+    } catch { /* not the xe layout */ }
+    return candidates.find(existsSync);
+}
+
+// Readers keep a previous sample, so they are built once per card path and
+// reused: a fresh one on every re-enumeration would start blind each minute.
+const residencyReaders = new Map();
+function residencyReaderFor(path) {
+    if (!residencyReaders.has(path)) residencyReaders.set(path, createResidencyReader(path));
+    return residencyReaders.get(path);
+}
+
+function enumerateDrmGpuSensors(sensors) {
+    // LACT serves richer data for the cards it manages, and owns the aliases
+    // where it is running.
+    const aliasesTaken = sensors.has("gpu.temp") || sensors.has("gpu.usage_percent");
+    const cards = drmCards().filter(c => c.driver !== "nvidia"); // no sysfs worth reading
+    // One alias set, so the discrete card wins: it is the one a GPU widget means.
+    const ranked = [...cards].sort((a, b) => vramTotal(b) - vramTotal(a));
+
+    for (const card of cards) {
+        const intel = card.vendor === "8086";
+        const name = pciDeviceName(card.vendor ?? "", card.deviceId ?? "")
+            ?? `${intel ? "Intel" : card.driver} Graphics [${card.vendor}:${card.deviceId}]`;
+        const base = {
+            hardwareId: `drm@${card.card}`,
+            hardwareName: name,
+            hardwareType: intel ? "GpuIntel" : "GpuAmd",
+            pollingGroupId: `drm@${card.card}`,
+        };
+        const owner = ranked[0] === card && !aliasesTaken;
+        const add = (key, aliasId, sensorName, sensorType, unit, read, valueKind) => {
+            const entry = {
+                ...base, unit, sensorName, sensorType,
+                valueKind: valueKind ?? 1, read,
+            };
+            sensors.set(`linux-drm.${card.card}.${key}`, {
+                ...entry, metricId: `linux-drm.${card.card}.${key}`,
+            });
+            if (owner && aliasId) {
+                sensors.set(aliasId, { ...entry, metricId: aliasId, metricIdKind: 1 });
+            }
+        };
+
+        add("model", "gpu.model", "GPU Model", "Text", 0, async () => name, 2);
+
+        // amdgpu publishes utilisation directly; on Intel it is the inverse of
+        // the time the render engine spent idle.
+        const busy = join(card.device, "gpu_busy_percent");
+        if (existsSync(busy)) {
+            add("busy", "gpu.usage_percent", "GPU Core Load", "Load", UNIT.PERCENT,
+                async () => Number(readTrimmed(busy)));
+        } else {
+            const rc6 = rc6ResidencyPath(card);
+            const reader = rc6 && residencyReaderFor(rc6);
+            if (reader) {
+                add("busy", "gpu.usage_percent", "GPU Core Load", "Load", UNIT.PERCENT,
+                    async () => reader());
+            }
+        }
+
+        // amdgpu carries its own hwmon; an Intel integrated GPU has none,
+        // because it shares the CPU die and so reports through coretemp.
+        // hwmon chips are keyed by the PCI slot of the device they hang off,
+        // which is the same slot the card points at.
+        const slot = basename(readlinkSyncSafe(card.device));
+        const hwmon = slot
+            ? [...sensors.values()].filter(
+                s => s.hardwareType === "hwmon" && s.hardwareId.endsWith(`@${slot}`))
+            : [];
+        // amdgpu labels the die sensor "edge", package power "PPT" and the core
+        // clock "sclk"; take those over the junction/memory sensors beside them.
+        const pick = (unit, label) => hwmon.find(s => s.unit === unit && s.sensorName === label)
+            ?? hwmon.find(s => s.unit === unit);
+        const cardTemp = pick(UNIT.CELSIUS, "edge");
+        const cardPower = pick(UNIT.WATTS, "PPT");
+        const cardClock = pick(UNIT.HERTZ, "sclk");
+
+        if (cardTemp) {
+            add("temp", "gpu.temp", "GPU Core", "Temperature", UNIT.CELSIUS, () => cardTemp.read());
+        } else if (intel && sensors.has("cpu.temp")) {
+            // The iGPU sits on the CPU die, so the package sensor is its
+            // temperature -- the same reading Intel's own tools report.
+            const packageTemp = sensors.get("cpu.temp");
+            add("temp", "gpu.temp", "GPU Core (CPU package)", "Temperature", UNIT.CELSIUS,
+                () => packageTemp.read());
+        }
+
+        if (cardPower) {
+            add("power", "gpu.power", "GPU Package Power", "Power", UNIT.WATTS, () => cardPower.read());
+        } else if (intel && raplUncoreReader) {
+            add("power", "gpu.power", "GPU Package Power", "Power", UNIT.WATTS,
+                async () => raplUncoreReader());
+        }
+
+        if (cardClock) {
+            add("clock_gpu", undefined, "GPU Core Clock", "Clock", UNIT.HERTZ, () => cardClock.read());
+        } else {
+            const clock = drmCoreClockPath(card);
+            if (clock) {
+                add("clock_gpu", undefined, "GPU Core Clock", "Clock", UNIT.HERTZ,
+                    async () => Number(readTrimmed(clock)) * 1e6);
+            }
+        }
+
+        // Only a card with dedicated memory has VRAM to report. An Intel
+        // integrated GPU allocates out of system RAM and publishes neither.
+        const vramUsed = join(card.device, "mem_info_vram_used");
+        const vramTotalPath = join(card.device, "mem_info_vram_total");
+        if (existsSync(vramUsed) && existsSync(vramTotalPath)) {
+            add("vram_used", "gpu.vram_used", "GPU Memory Used", "Data", UNIT.BYTES,
+                async () => Number(readTrimmed(vramUsed)));
+            add("vram_total", "gpu.vram_total", "GPU Memory Total", "Data", UNIT.BYTES,
+                async () => Number(readTrimmed(vramTotalPath)));
+        }
+    }
+}
+
+function vramTotal(card) {
+    try {
+        return Number(readTrimmed(join(card.device, "mem_info_vram_total")));
+    } catch {
+        return 0;
+    }
+}
+
+function readlinkSyncSafe(path) {
+    try {
+        return readlinkSync(path);
+    } catch {
+        return "";
+    }
+}
+
+
 // --------------------------------------------------------- MangoHud FPS source
 
 const MANGOHUD_DIR = process.env.MANGOHUD_LOG_DIR
@@ -511,6 +792,12 @@ async function refreshedSensors() {
         } catch (e) {
             console.error("lact enumeration failed:", e.message);
         }
+        // After LACT, which owns the GPU aliases for the cards it manages.
+        try {
+            enumerateDrmGpuSensors(next);
+        } catch (e) {
+            console.error("drm enumeration failed:", e.message);
+        }
         sensors = next;
         lastEnumeratedAt = Date.now();
         enumerating = null;
@@ -562,6 +849,7 @@ const handlers = {
                 { component: "daemon:lactd", state: existsSync(LACT_SOCKET) ? 2 : 3 /* NOT_INSTALLED */ },
                 // Without the udev rule energy_uj stays root-only and cpu.power is absent.
                 { component: "sysfs:rapl", state: raplPowerReader ? 2 : 3 /* NOT_INSTALLED */ },
+                { component: "sysfs:drm", state: drmCards().some(c => c.driver !== "nvidia") ? 2 : 3 },
             ],
         });
     },

@@ -27,7 +27,8 @@ the data comes from:
   temp, **hotspot**, **VRAM junction and per-chip temps** (readings NVML
   refuses to expose on Blackwell), fan RPM/PWM, power draw and limit, clocks,
   VRAM usage, utilization
-- **AMD GPUs** through plain hwmon (amdgpu)
+- **AMD and Intel GPUs** from `/sys/class/drm`: load, temperature, power, core
+  clock, and VRAM on cards that have their own memory
 - **In-game FPS via [MangoHud](https://github.com/flightlessmango/MangoHud)**:
   FPS, 1% lows, and frametime while a MangoHud-enabled game runs
 - **CPU package power via RAPL** (`/sys/class/powercap`), on both Intel and
@@ -41,7 +42,9 @@ the data comes from:
 ```
 Sho Metrics Linux plugin (OpenDeck)  --gRPC over unix socket-->  packages/source-linux
         |                                                               |- /sys/class/hwmon
-     OpenDeck                                                           |- lactd (NVIDIA)
+     OpenDeck                                                           |- /sys/class/drm
+                                                                        |- /sys/class/powercap
+                                                                        |- lactd (NVIDIA)
                                                                         |- ~/mangohud_logs
 ```
 
@@ -94,9 +97,10 @@ cd packages/source-linux
 ```
 
 The packages also install a udev rule that makes RAPL's energy counter
-readable, which is what `cpu.power` needs. `install.sh` asks before installing
-it. Any local account can read the counter afterwards, so skip it on a shared
-machine. The helper then drops `cpu.power` and everything else works.
+readable, which is what `cpu.power` needs, and `gpu.power` on Intel.
+`install.sh` asks before installing it. Any local account can read the counter
+afterwards, so skip it on a shared machine. The helper then drops those two
+metrics and everything else works.
 
 The distro packages ship the systemd user unit disabled, so enable it once
 (the checkout installer already does this):

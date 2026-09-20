@@ -7,7 +7,9 @@ serves hardware sensors to the Sho Metrics plugin over the
 ```
 Sho Metrics plugin (OpenDeck)  --gRPC over unix socket-->  server.mjs
     |                                                          |- /sys/class/hwmon
- OpenDeck                                                      |- lactd (NVIDIA)
+ OpenDeck                                                      |- /sys/class/drm
+                                                               |- /sys/class/powercap
+                                                               |- lactd (NVIDIA)
                                                                |- ~/mangohud_logs
 ```
 
@@ -22,7 +24,9 @@ Sensor sources:
   expose on Blackwell), fan RPM/PWM, power draw and limit, clocks, VRAM usage,
   utilization. `lact` with the `lactd` system service enabled; v0.10+ for
   Blackwell hotspot
-- **AMD GPUs** through plain hwmon (amdgpu)
+- **AMD and Intel GPUs** from `/sys/class/drm`: load, temperature, power,
+  core clock and, where the card has dedicated memory, VRAM usage. Plain
+  world-readable files, so no daemon and no added privileges
 - **In-game FPS via [MangoHud](https://github.com/flightlessmango/MangoHud)**:
   FPS, 1% lows, and frametime while a MangoHud-enabled game runs
 - **CPU package power via RAPL** (`/sys/class/powercap`), on both Intel and
@@ -44,6 +48,27 @@ The curated CPU widgets read five aliases:
 A missing source drops its alias rather than reporting a wrong number. The
 widget shows N/A for that field and the rest keep working.
 
+The curated GPU widgets read a matching set:
+
+| Alias | AMD | Intel |
+| --- | --- | --- |
+| `gpu.temp` | amdgpu hwmon `edge` | `coretemp` package, because the integrated GPU shares the CPU die |
+| `gpu.usage_percent` | `gpu_busy_percent` | RC6 residency, inverted |
+| `gpu.power` | amdgpu hwmon `PPT` | RAPL `uncore` rail, which needs the udev rule |
+| `gpu.vram_used` / `gpu.vram_total` | `mem_info_vram_*` | absent: an integrated GPU allocates out of system RAM |
+| `gpu.model` | `/usr/share/hwdata/pci.ids` | same |
+
+LACT owns these aliases for any card it manages, so an NVIDIA GPU keeps
+reporting through LACT. This source fills in the machines LACT does not cover.
+Where a discrete and an integrated GPU sit side by side, the discrete one takes
+the aliases. Every card is published under `linux-drm.cardN.*` as well, which
+the "Other" metric type can select directly.
+
+Intel load comes from RC6 residency, the share of the interval the render
+engine spent power gated. `intel_gpu_top` reads the same counter through the
+i915 perf PMU, which needs `kernel.perf_event_paranoid` lowered. The sysfs file
+needs nothing.
+
 ### CPU power and the udev rule
 
 Reading RAPL fast enough to compute watts is the PLATYPUS side channel
@@ -52,11 +77,14 @@ as your user and cannot read it. The packages install
 `/usr/lib/udev/rules.d/60-sho-metrics-rapl.rules`, which makes the counter
 readable. `install.sh` asks first.
 
+The same rule covers `gpu.power` on Intel, which reads the `uncore` rail of the
+same counter.
+
 Any local account can then read the counter. On a single-user desktop that is
 your own user. On a shared machine, skip the rule. To undo it, delete the file,
 run `udevadm control --reload` and reboot. The helper then reports
-`sysfs:rapl` as `NOT_INSTALLED` and drops `cpu.power`, and nothing else
-changes. `SHOMETRICS_SKIP_UDEV=1 ./install.sh` skips the prompt.
+`sysfs:rapl` as `NOT_INSTALLED` and drops `cpu.power` and, on Intel,
+`gpu.power`; nothing else changes. `SHOMETRICS_SKIP_UDEV=1 ./install.sh` skips the prompt.
 
 ## Install
 

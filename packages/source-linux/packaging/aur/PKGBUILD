@@ -1,8 +1,8 @@
 # Maintainer: Emanuele Sparvoli <sparvoli@gmail.com>
 
 pkgname=sho-metrics-source-linux
-_forkver=0.3.0-linux.5
-pkgver=0.3.0.linux.5
+_forkver=0.3.0-linux.6
+pkgver=0.3.0.linux.6
 pkgrel=1
 pkgdesc="Linux hardware sensor helper daemon for the Sho Metrics OpenDeck plugin"
 arch=('any')

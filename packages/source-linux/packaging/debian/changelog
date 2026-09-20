@@ -1,3 +1,15 @@
+sho-metrics-source-linux (0.3.0+linux6-0ppa1~ubuntu26.04.1) resolute; urgency=medium
+
+  * Serve AMD and Intel GPU sensors from /sys/class/drm. The curated GPU
+    widgets only ever resolved against an NVIDIA card managed by lactd, so
+    every other machine read N/A for load, temperature, power and VRAM.
+  * Read Intel integrated GPU load from RC6 residency and its power from the
+    RAPL uncore rail, both plain sysfs files, so neither needs a privileged
+    perf counter.
+  * Expose hwmon freqN_input, which is where amdgpu publishes the core clock.
+
+ -- Emanuele Sparvoli <sparvoli@gmail.com>  Sun, 20 Sep 2026 09:45:00 +0100
+
 sho-metrics-source-linux (0.3.0+linux5-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
   * Add cpu.power, cpu.usage_percent and cpu.model, which the plugin's curated

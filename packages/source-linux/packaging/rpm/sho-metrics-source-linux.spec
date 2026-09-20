@@ -1,8 +1,8 @@
-%global forkver 0.3.0-linux.5
+%global forkver 0.3.0-linux.6
 %global libdir  %{_prefix}/lib/%{name}
 
 Name:           sho-metrics-source-linux
-Version:        0.3.0^linux5
+Version:        0.3.0^linux6
 Release:        1%{?dist}
 Summary:        Linux hardware sensor helper daemon for the Sho Metrics OpenDeck plugin
 
@@ -110,6 +110,9 @@ SHOMETRICS_PROTO_DIR=%{buildroot}%{libdir}/proto \
 %{_udevrulesdir}/60-sho-metrics-rapl.rules
 
 %changelog
+* Sun Sep 20 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux6-1
+- AMD and Intel GPU sensors from /sys/class/drm (fork tag v0.3.0-linux.6)
+
 * Sat Sep 19 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux5-1
 - CPU package power, load, model; CPU temperature on Intel (fork tag v0.3.0-linux.5)
 
