@@ -14,8 +14,12 @@
  * (the package exports map blocks the subpath; rollup inlines it to the same
  * module instance the SDK itself uses). Keep every use behind
  * `isOpenDeckPropertyInspectorHost` so normal Stream Deck behavior is
- * untouched, and delete this module if OpenDeck aligns its property inspector
- * lifecycle with the SDK's expectations.
+ * untouched.
+ *
+ * This path is permanent: OpenDeck keeps its lifecycle by design
+ * (nekename/OpenDeck#449, closed as not planned). The SDK range in
+ * package.json is pinned to a minor version because the import below reaches
+ * into the SDK's private dist layout; re-check it on every SDK bump.
  */
 import { connection } from "../../../node_modules/@elgato/streamdeck/dist/plugin/connection.js";
 import type { SendToPropertyInspector } from "../../../node_modules/@elgato/streamdeck/dist/api/command.js";
