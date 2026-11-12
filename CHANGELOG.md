@@ -4,6 +4,16 @@ All notable changes to ShoMetrics will be documented in this file.
 
 ## Unreleased
 
+### Linux plugin
+
+Released as fork tag `v0.3.0-linux.8`.
+
+- Add three vacuum fluorescent display themes: VFD Amber, VFD Blue and VFD
+  Classic (green). Readings use DSEG7 over unlit 88 segments, titles and units
+  DSEG14, with phosphor glow, light spill, the control-grid mesh and a faint
+  glass sheen. The top 30% of every meter turns red. Both DSEG fonts are
+  bundled (OFL 1.1).
+
 ### Linux helper
 
 Released as fork tags `v0.3.0-linux.4` through `v0.3.0-linux.7`.
