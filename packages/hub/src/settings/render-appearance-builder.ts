@@ -57,7 +57,9 @@ function resolveThemePresetName(theme: ResolvedAppearanceThemeSettings): ThemePr
         case "pixel-window":
             return "pixel-window";
         case "vfd-amber":
-            return "vfd-amber";
+        case "vfd-blue":
+        case "vfd-classic":
+            return theme.selectedTheme;
         case "flat":
         case "cupertino-glass":
         case "color-filled":

@@ -20,6 +20,8 @@ export function resolveRenderThemeEffects(settings: ResolvedAppearanceSettings):
                 ? TERMINAL_VINTAGE_RENDER_THEME_EFFECT_TOKENS
                 : TERMINAL_CLEAN_RENDER_THEME_EFFECT_TOKENS;
         case "vfd-amber":
+        case "vfd-blue":
+        case "vfd-classic":
             return VFD_RENDER_THEME_EFFECT_TOKENS;
         case "flat":
         case "cupertino-glass":

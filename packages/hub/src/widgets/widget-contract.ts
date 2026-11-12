@@ -19,5 +19,7 @@ export type ThemePresetName =
     | "color-filled"
     | "pixel-window"
     | "vfd-amber"
+    | "vfd-blue"
+    | "vfd-classic"
     | "terminal-clean"
     | "terminal-vintage";

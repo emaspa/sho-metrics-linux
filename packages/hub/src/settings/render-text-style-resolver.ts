@@ -28,6 +28,8 @@ export function resolveRenderTextStyles(settings: ResolvedAppearanceSettings): R
         case "pixel-window":
             return PIXEL_RENDER_TEXT_STYLES;
         case "vfd-amber":
+        case "vfd-blue":
+        case "vfd-classic":
             return VFD_RENDER_TEXT_STYLES;
         case "flat":
         case "cupertino-glass":

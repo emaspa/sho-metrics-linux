@@ -58,6 +58,8 @@ function resolveDenseThemeRenderStrategy(
                 },
             };
         case "vfd-amber":
+        case "vfd-blue":
+        case "vfd-classic":
             // A dim phosphor track keeps the dark bar numbers readable across
             // both the lit and the unlit part of the bar.
             return {

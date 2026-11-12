@@ -146,6 +146,16 @@ export const optionMessages = {
         zh_CN: "VFD 琥珀",
         ja: "VFD アンバー",
     },
+    vfdBlueOption: {
+        en: "VFD Blue",
+        zh_CN: "VFD 蓝色",
+        ja: "VFD ブルー",
+    },
+    vfdClassicOption: {
+        en: "VFD Classic",
+        zh_CN: "VFD 经典",
+        ja: "VFD クラシック",
+    },
     circleOption: {
         en: "Circle",
         zh_CN: "圆环",

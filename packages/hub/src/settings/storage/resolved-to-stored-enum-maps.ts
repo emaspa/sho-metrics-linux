@@ -80,6 +80,8 @@ export const storedThemeByResolved = {
     "terminal": StoredMetricTheme.TERMINAL,
     "pixel-window": StoredMetricTheme.PIXEL_WINDOW,
     "vfd-amber": StoredMetricTheme.VFD_AMBER,
+    "vfd-blue": StoredMetricTheme.VFD_BLUE,
+    "vfd-classic": StoredMetricTheme.VFD_CLASSIC,
 } satisfies Record<MetricTheme, StoredMetricTheme>;
 
 export const storedTerminalThemeVariantByResolved = {

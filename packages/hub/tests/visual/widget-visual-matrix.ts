@@ -45,7 +45,9 @@ export type VisualMatrixThemeCaseId =
     | "terminal-clean"
     | "terminal-vintage"
     | "pixel-window"
-    | "vfd-amber";
+    | "vfd-amber"
+    | "vfd-blue"
+    | "vfd-classic";
 
 export type VisualMatrixSurfaceCaseId =
     | "keypad-square"
@@ -141,6 +143,8 @@ export const VISUAL_MATRIX_THEME_CASES: readonly VisualMatrixThemeCaseId[] = [
     "terminal-vintage",
     "pixel-window",
     "vfd-amber",
+    "vfd-blue",
+    "vfd-classic",
 ];
 
 export const VISUAL_MATRIX_SURFACE_CASES: readonly VisualMatrixSurfaceCaseId[] = [
@@ -443,6 +447,18 @@ const THEME_CASE_DEFINITIONS: readonly ThemeCaseDefinition[] = [
         themeCase: "vfd-amber",
         appearanceTheme: {
             selectedTheme: "vfd-amber",
+        },
+    },
+    {
+        themeCase: "vfd-blue",
+        appearanceTheme: {
+            selectedTheme: "vfd-blue",
+        },
+    },
+    {
+        themeCase: "vfd-classic",
+        appearanceTheme: {
+            selectedTheme: "vfd-classic",
         },
     },
 ];

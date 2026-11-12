@@ -559,3 +559,31 @@ test("VFD Amber meters turn red for the top 30% of the scale on every channel", 
         });
     }
 });
+
+test("VFD Blue and VFD Classic map to their own presets and phosphor paint", () => {
+    for (const [theme, lit] of [["vfd-blue", "#3fe6ff"], ["vfd-classic", "#4ade80"]] as const) {
+        const vfdSettings = buildMetricRenderAppearance(buildAppearanceSettings({
+            theme: { selectedTheme: theme },
+        }));
+
+        assert.equal(vfdSettings.themePreset, theme);
+        assert.deepEqual(vfdSettings.textStyles, VFD_RENDER_TEXT_STYLES);
+        assert.deepEqual(vfdSettings.themeEffects, VFD_RENDER_THEME_EFFECT_TOKENS);
+        assert.equal(vfdSettings.paints.metricValueText, lit);
+    }
+});
+
+test("VFD Classic meters turn yellow from 70% and red from 90%", () => {
+    const appearance = buildAppearanceSettings({ theme: { selectedTheme: "vfd-classic" } });
+
+    assert.deepEqual(buildColorConfigFromAppearance(appearance, "usage"), {
+        mode: "threshold",
+        solidColor: "#4ade80",
+        thresholds: [
+            { min: 0, max: 70, color: "#4ade80" },
+            { min: 70, max: 90, color: "#facc15" },
+            { min: 90, max: 101, color: "#ef4444" },
+        ],
+        isGradientEnabled: false,
+    });
+});

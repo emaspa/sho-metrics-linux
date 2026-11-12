@@ -5,7 +5,7 @@ import { cupertinoGlassStyle } from "../../widgets/styles/cupertino-glass";
 import { flatStyle } from "../../widgets/styles/flat";
 import { pixelWindowStyle } from "../../widgets/styles/pixel-window";
 import { terminalCleanStyle, terminalVintageStyle } from "../../widgets/styles/terminal";
-import { vfdAmberStyle } from "../../widgets/styles/vfd-amber";
+import { vfdAmberStyle, vfdBlueStyle, vfdClassicStyle } from "../../widgets/styles/vfd";
 import type { ThemeBodyViewport, ThemeStyle, ThemeStylePaints } from "../../widgets/styles/theme-style";
 
 export interface MetricFrameBody {
@@ -133,6 +133,10 @@ function resolveThemePreset(themePreset: ThemePresetName): ThemeStyle {
             return terminalVintageStyle;
         case "vfd-amber":
             return vfdAmberStyle;
+        case "vfd-blue":
+            return vfdBlueStyle;
+        case "vfd-classic":
+            return vfdClassicStyle;
     }
 }
 

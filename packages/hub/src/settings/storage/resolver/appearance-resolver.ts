@@ -237,6 +237,8 @@ export function resolveAppearanceDefaultsForViewAndTheme(
         case "terminal":
         case "pixel-window":
         case "vfd-amber":
+        case "vfd-blue":
+        case "vfd-classic":
             return themeDefaults;
     }
 }
@@ -566,6 +568,8 @@ export function applyGlobalPaintOverride(
             };
         case "pixel-window":
         case "vfd-amber":
+        case "vfd-blue":
+        case "vfd-classic":
             return appearance;
     }
 }

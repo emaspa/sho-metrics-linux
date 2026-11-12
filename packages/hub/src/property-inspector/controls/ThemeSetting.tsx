@@ -65,4 +65,6 @@ const themeMessageByValue = {
     terminal: optionMessages.terminalOption,
     "pixel-window": optionMessages.pixelWindowOption,
     "vfd-amber": optionMessages.vfdAmberOption,
+    "vfd-blue": optionMessages.vfdBlueOption,
+    "vfd-classic": optionMessages.vfdClassicOption,
 } as const;

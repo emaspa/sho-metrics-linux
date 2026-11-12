@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { vfdAmberStyle } from "./vfd-amber";
+import { vfdAmberStyle, vfdBlueStyle, vfdClassicStyle } from "./vfd";
 
 const PAINTS = { background: "#090503", backgroundFill: undefined, surface: "#ff9634" };
 
@@ -26,4 +26,19 @@ test("dark bar numbers, headings, and other faces stay as they are", () => {
     assert.equal(transform(darkBarNumber), darkBarNumber);
     assert.equal(transform(heading), heading);
     assert.equal(transform(inter), inter);
+});
+
+test("each VFD palette draws its own unlit segments and halo", () => {
+    const reading = `<text font-family="'DSEG7 Classic'" fill="#ffffff">1</text>`;
+    const keySize = { width: 144, height: 144 };
+
+    for (const [style, ghost, haloRedRow] of [
+        [vfdAmberStyle, "#281308", "1 0 0 0 0"],
+        [vfdBlueStyle, "#0b2328", "1.054 -0.088 -0.181 0 0"],
+        [vfdClassicStyle, "#0c2616", "1.223 -0.215 -0.335 0 0"],
+    ] as const) {
+        assert.ok(style.transformBody);
+        assert.match(style.transformBody(reading, PAINTS), new RegExp(`fill="${ghost}"`, "u"));
+        assert.match(style.renderDefs(keySize, PAINTS), new RegExp(`values="${haloRedRow}`, "u"));
+    }
 });

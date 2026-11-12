@@ -5,6 +5,7 @@ import type {
     RenderPaintTokens,
 } from "../view-rendering/color/render-appearance";
 import { DEFAULT_PIXEL_WINDOW_PALETTE } from "../view-rendering/color/pixel-window-theme-tokens";
+import { VFD_PALETTES, type VfdPalette } from "../view-rendering/color/vfd-theme-tokens";
 import { parseHexColor, resolveRelativeLuminance } from "../shared/color-utils";
 import type { MetricColorChannel } from "./appearance-overrides";
 import type {
@@ -30,18 +31,6 @@ const TERMINAL_CLEAN_BLACK_GLASS_PAINT = "#010705";
 const TERMINAL_VINTAGE_BLACK_GLASS_PAINT = "#010301";
 const COLOR_FILLED_DARK_FOREGROUND_PAINT = "#111827";
 const COLOR_FILLED_LIGHT_FOREGROUND_PAINT = "#ffffff";
-// VFD Amber follows the InfoPanel amber VFD profiles and OpenXLR's Hi-Fi Amber
-// skin: one orange phosphor, with red for the top 30% of every meter.
-const VFD_HOT_THRESHOLD_PERCENT = 70;
-const VFD_AMBER_PAINTS = {
-    background: "#090503",
-    lit: "#ff9634",
-    litRgbChannels: "255,150,52",
-    hot: "#ff3b2f",
-    ghost: "#281308",
-    silk: "#a85622",
-    frameRgbChannels: "74,38,16",
-} as const;
 // Color Filled keeps saturated mid-luminance backgrounds, such as the default blue,
 // on a white foreground for theme character instead of switching at the WCAG text threshold.
 const COLOR_FILLED_DARK_FOREGROUND_LUMINANCE_THRESHOLD = 0.62;
@@ -186,7 +175,9 @@ export function buildColorConfigFromAppearance(
         case "pixel-window":
             return pixelWindowColorConfig();
         case "vfd-amber":
-            return vfdAmberColorConfig();
+        case "vfd-blue":
+        case "vfd-classic":
+            return vfdColorConfig(VFD_PALETTES[appearance.theme.selectedTheme]);
     }
 }
 
@@ -223,6 +214,8 @@ export function resolveActiveMetricAccentPaint(
         case "terminal":
         case "pixel-window":
         case "vfd-amber":
+        case "vfd-blue":
+        case "vfd-classic":
             return undefined;
     }
 }
@@ -331,9 +324,13 @@ function buildRenderPaintTokens(
         };
     }
 
-    if (settings.theme.selectedTheme === "vfd-amber") {
+    if (
+        settings.theme.selectedTheme === "vfd-amber"
+        || settings.theme.selectedTheme === "vfd-blue"
+        || settings.theme.selectedTheme === "vfd-classic"
+    ) {
         return {
-            ...vfdAmberRenderPaintTokens(),
+            ...vfdRenderPaintTokens(VFD_PALETTES[settings.theme.selectedTheme]),
             backgroundFill: undefined,
             primaryMetric,
         };
@@ -362,36 +359,40 @@ function buildRenderPaintTokens(
     };
 }
 
-function vfdAmberColorConfig(): ColorConfig {
+/** Lit phosphor up to the first zone, then each zone's colour to full scale. */
+function vfdColorConfig(palette: VfdPalette): ColorConfig {
+    const bands = [{ fromPercent: MINIMUM_THRESHOLD, color: palette.lit }, ...palette.zones];
+
     return {
         mode: "threshold",
-        solidColor: VFD_AMBER_PAINTS.lit,
-        thresholds: [
-            { min: MINIMUM_THRESHOLD, max: VFD_HOT_THRESHOLD_PERCENT, color: VFD_AMBER_PAINTS.lit },
-            { min: VFD_HOT_THRESHOLD_PERCENT, max: MAXIMUM_THRESHOLD + 1, color: VFD_AMBER_PAINTS.hot },
-        ],
+        solidColor: palette.lit,
+        thresholds: bands.map((band, index) => ({
+            min: band.fromPercent,
+            max: bands[index + 1]?.fromPercent ?? MAXIMUM_THRESHOLD + 1,
+            color: band.color,
+        })),
         isGradientEnabled: false,
     };
 }
 
-function vfdAmberRenderPaintTokens(): Omit<RenderPaintTokens, "backgroundFill" | "primaryMetric"> {
-    const lit = VFD_AMBER_PAINTS.litRgbChannels;
+function vfdRenderPaintTokens(palette: VfdPalette): Omit<RenderPaintTokens, "backgroundFill" | "primaryMetric"> {
+    const lit = palette.litRgbChannels;
 
     return {
-        background: VFD_AMBER_PAINTS.background,
-        surface: VFD_AMBER_PAINTS.lit,
-        primaryText: VFD_AMBER_PAINTS.lit,
+        background: palette.background,
+        surface: palette.lit,
+        primaryText: palette.lit,
         secondaryText: rgba(lit, 0.82),
-        mutedText: VFD_AMBER_PAINTS.silk,
-        icon: VFD_AMBER_PAINTS.lit,
+        mutedText: palette.silk,
+        icon: palette.lit,
         barTitleText: rgba(lit, 0.86),
-        metricValueText: VFD_AMBER_PAINTS.lit,
-        barValueText: VFD_AMBER_PAINTS.lit,
+        metricValueText: palette.lit,
+        barValueText: palette.lit,
         barUnitText: rgba(lit, 0.78),
-        barSecondaryText: VFD_AMBER_PAINTS.silk,
-        track: VFD_AMBER_PAINTS.ghost,
-        grid: rgba(VFD_AMBER_PAINTS.frameRgbChannels, 0.9),
-        divider: rgba(VFD_AMBER_PAINTS.frameRgbChannels, 0.9),
+        barSecondaryText: palette.silk,
+        track: palette.ghost,
+        grid: rgba(palette.frameRgbChannels, 0.9),
+        divider: rgba(palette.frameRgbChannels, 0.9),
     };
 }
 
@@ -599,6 +600,8 @@ function activePaintColorMode(settings: ResolvedAppearanceSettings): ColorMode {
         case "terminal":
         case "pixel-window":
         case "vfd-amber":
+        case "vfd-blue":
+        case "vfd-classic":
             return "solid";
     }
 }
