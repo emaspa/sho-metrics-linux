@@ -1,3 +1,9 @@
+sho-metrics-source-linux (0.3.0+linux8-0ppa1~ubuntu26.04.1) resolute; urgency=medium
+
+  * No helper changes. This fork tag ships the VFD themes in the plugin.
+
+ -- Emanuele Sparvoli <sparvoli@gmail.com>  Thu, 12 Nov 2026 19:00:00 +0000
+
 sho-metrics-source-linux (0.3.0+linux7-0ppa1~ubuntu26.04.1) resolute; urgency=medium
 
   * Read batteries and the mains adapter from /sys/class/power_supply as
