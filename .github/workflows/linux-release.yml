@@ -407,18 +407,6 @@ jobs:
             echo "| \`sho-metrics-source-linux-${TAG_NAME#v}-node-modules.tar.gz\` | the vendored dependencies on their own |"
             echo
             echo "After installing, enable the service for your user: \`systemctl --user enable --now shometrics-linux-helper.service\`"
-            echo
-            echo "### Migrating from the old patched plugin (com.ez.sho-metrics)"
-            echo
-            echo "This fork uses a new plugin id, \`com.ez.sho-metrics-linux\`. To keep existing keys instead of re-adding them, quit OpenDeck, then:"
-            echo
-            echo '```sh'
-            echo 'cp -r ~/.config/opendeck/profiles ~/opendeck-profiles.bak'
-            echo "sed -i 's/com\.ez\.sho-metrics/com.ez.sho-metrics-linux/g' ~/.config/opendeck/profiles/*/Default.json"
-            echo 'rm -rf ~/.config/opendeck/plugins/com.ez.sho-metrics.sdPlugin'
-            echo '```'
-            echo
-            echo "Then install this release and start OpenDeck. Stored settings are unchanged, so keys, sensor selections, and layouts carry over. Fresh installs skip this section."
           } > "${publish_dir}/release-notes.md"
 
           (
