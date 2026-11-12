@@ -114,6 +114,7 @@ async function buildHubThirdPartyNotices() {
         "| DotGothic16 | <https://github.com/fontworks-fonts/DotGothic16> | SIL Open Font License 1.1 |",
         "| BIZ UDPMincho | <https://github.com/googlefonts/morisawa-biz-ud-mincho> | SIL Open Font License 1.1 |",
         "| Share Tech Mono | <https://github.com/google/fonts/tree/main/ofl/sharetechmono> | SIL Open Font License 1.1 |",
+        "| DSEG7 Classic, DSEG14 Classic | <https://github.com/keshikan/DSEG> | SIL Open Font License 1.1 |",
         "",
         "## Bundled npm Runtime Packages",
         "",
