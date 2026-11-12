@@ -209,6 +209,7 @@ export function buildMetricAccentPaintAppearanceOverride(
         case "color-filled":
         case "terminal":
         case "pixel-window":
+        case "vfd-amber":
             return undefined;
     }
 }

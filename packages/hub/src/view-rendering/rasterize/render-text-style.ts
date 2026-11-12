@@ -3,6 +3,9 @@ import {
     TERMINAL_LABEL_GLOW_FILTER_ID,
     TERMINAL_SUBTLE_GLOW_FILTER_ID,
     TERMINAL_VALUE_GLOW_FILTER_ID,
+    VFD_LABEL_GLOW_FILTER_ID,
+    VFD_SUBTLE_GLOW_FILTER_ID,
+    VFD_VALUE_GLOW_FILTER_ID,
 } from "./render-svg-effects";
 
 export interface RenderTextStyle {
@@ -99,7 +102,9 @@ export interface RenderTextStyles {
     readonly footnote: RenderTextStyle;
 }
 
-const MINIMUM_TEXT_STYLE_FONT_SIZE_SCALE = 0.9;
+// DSEG glyphs fill the whole em where Inter capitals fill about 0.74 of it,
+// so the VFD preset needs scales below the 0.9 the other presets stay above.
+const MINIMUM_TEXT_STYLE_FONT_SIZE_SCALE = 0.75;
 const MAXIMUM_TEXT_STYLE_FONT_SIZE_SCALE = 1.12;
 export const DEFAULT_RENDER_TEXT_BASELINE_SHIFT_EM = 0;
 export const DEFAULT_RENDER_TEXT_CLIP_HEIGHT_EM = 1.45;
@@ -108,6 +113,17 @@ export const DEFAULT_RENDER_TEXT_LETTER_SPACING_EM = 0;
 export const DEFAULT_RENDER_TEXT_MINIMUM_FONT_SCALE = 0.78;
 const DEFAULT_RENDER_FONT_FAMILY = "'SF Pro Display','Helvetica Neue','Inter','Segoe UI',sans-serif";
 const TERMINAL_FONT_FAMILY = "'Share Tech Mono','SF Pro Display','Helvetica Neue','Inter','Segoe UI',monospace";
+const VFD_SEVEN_SEGMENT_FONT_FAMILY = "'DSEG7 Classic','DSEG14 Classic','Share Tech Mono',monospace";
+const VFD_VALUE_FONT_SIZE_SCALE = 0.85;
+const VFD_TEXT_FONT_SIZE_SCALE = 0.8;
+// A DSEG glyph is centred on the em box, Inter and Share Tech Mono capitals sit
+// about 0.1 em higher under dominant-baseline="middle". Measured per view
+// against the Terminal preset.
+const VFD_BASELINE_SHIFT_EM = -0.11;
+// Every DSEG cell is 0.8 em wide; the estimator counts 0.62 for capitals and
+// digits and 0.52 for lower case, which DSEG draws at full cell width too.
+const VFD_WIDTH_SCALE = 1.35;
+const VFD_FOURTEEN_SEGMENT_FONT_FAMILY = "'DSEG14 Classic','Share Tech Mono',monospace";
 export const PIXEL_RENDER_FONT_FAMILY = "'DotGothic16','Inter','Segoe UI',sans-serif";
 export const JAPANESE_SERIF_RENDER_FONT_FAMILY = [
     "'Yu Mincho'",
@@ -325,6 +341,62 @@ export const PIXEL_RENDER_TEXT_STYLES = {
         baselineShiftEm: 0.03,
         widthScale: 0.9,
         letterSpacingEm: 0.2,
+        clipHorizontalBleedPixels: 2,
+        filter: undefined,
+    }),
+} satisfies RenderTextStyles;
+
+// VFD Amber draws readings in DSEG7 and everything else in DSEG14, the faces of
+// the InfoPanel VFD profiles. Both ship as Italic only, so the weights only feed
+// the width estimator. A DSEG glyph is 1 em tall and 0.8 em wide, against about
+// 0.74 and 0.63 for Inter, so the scales bring the segments close to Inter's cap
+// height and widthScale tells the estimator how much wider they still are.
+// Characters DSEG lacks fall back to Share Tech Mono.
+export const VFD_RENDER_TEXT_STYLES = {
+    value: createRenderTextStyle({
+        fontFamily: VFD_SEVEN_SEGMENT_FONT_FAMILY,
+        fontWeight: RenderFontWeight.Regular,
+        fontSizeScale: VFD_VALUE_FONT_SIZE_SCALE,
+        baselineShiftEm: VFD_BASELINE_SHIFT_EM,
+        widthScale: VFD_WIDTH_SCALE,
+        clipHorizontalBleedPixels: 3,
+        filter: `url(#${VFD_VALUE_GLOW_FILTER_ID})`,
+    }),
+    unit: createRenderTextStyle({
+        fontFamily: VFD_FOURTEEN_SEGMENT_FONT_FAMILY,
+        fontWeight: RenderFontWeight.Regular,
+        fontSizeScale: VFD_TEXT_FONT_SIZE_SCALE,
+        baselineShiftEm: VFD_BASELINE_SHIFT_EM,
+        widthScale: VFD_WIDTH_SCALE,
+        clipHorizontalBleedPixels: 2,
+        filter: `url(#${VFD_SUBTLE_GLOW_FILTER_ID})`,
+    }),
+    heading: createRenderTextStyle({
+        fontFamily: VFD_FOURTEEN_SEGMENT_FONT_FAMILY,
+        fontWeight: RenderFontWeight.Regular,
+        fontSizeScale: VFD_TEXT_FONT_SIZE_SCALE,
+        baselineShiftEm: VFD_BASELINE_SHIFT_EM,
+        widthScale: VFD_WIDTH_SCALE,
+        letterSpacingEm: 0.04,
+        clipHorizontalBleedPixels: 2,
+        filter: `url(#${VFD_LABEL_GLOW_FILTER_ID})`,
+    }),
+    label: createRenderTextStyle({
+        fontFamily: VFD_FOURTEEN_SEGMENT_FONT_FAMILY,
+        fontWeight: RenderFontWeight.Regular,
+        fontSizeScale: VFD_TEXT_FONT_SIZE_SCALE,
+        baselineShiftEm: VFD_BASELINE_SHIFT_EM,
+        widthScale: VFD_WIDTH_SCALE,
+        letterSpacingEm: 0.04,
+        clipHorizontalBleedPixels: 2,
+        filter: `url(#${VFD_SUBTLE_GLOW_FILTER_ID})`,
+    }),
+    footnote: createRenderTextStyle({
+        fontFamily: VFD_FOURTEEN_SEGMENT_FONT_FAMILY,
+        fontWeight: RenderFontWeight.Regular,
+        fontSizeScale: VFD_TEXT_FONT_SIZE_SCALE,
+        baselineShiftEm: VFD_BASELINE_SHIFT_EM,
+        widthScale: VFD_WIDTH_SCALE,
         clipHorizontalBleedPixels: 2,
         filter: undefined,
     }),

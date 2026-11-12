@@ -44,7 +44,8 @@ export type VisualMatrixThemeCaseId =
     | "color-filled"
     | "terminal-clean"
     | "terminal-vintage"
-    | "pixel-window";
+    | "pixel-window"
+    | "vfd-amber";
 
 export type VisualMatrixSurfaceCaseId =
     | "keypad-square"
@@ -139,6 +140,7 @@ export const VISUAL_MATRIX_THEME_CASES: readonly VisualMatrixThemeCaseId[] = [
     "terminal-clean",
     "terminal-vintage",
     "pixel-window",
+    "vfd-amber",
 ];
 
 export const VISUAL_MATRIX_SURFACE_CASES: readonly VisualMatrixSurfaceCaseId[] = [
@@ -435,6 +437,12 @@ const THEME_CASE_DEFINITIONS: readonly ThemeCaseDefinition[] = [
         themeCase: "pixel-window",
         appearanceTheme: {
             selectedTheme: "pixel-window",
+        },
+    },
+    {
+        themeCase: "vfd-amber",
+        appearanceTheme: {
+            selectedTheme: "vfd-amber",
         },
     },
 ];

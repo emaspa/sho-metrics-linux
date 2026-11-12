@@ -5,6 +5,7 @@ import { cupertinoGlassStyle } from "../../widgets/styles/cupertino-glass";
 import { flatStyle } from "../../widgets/styles/flat";
 import { pixelWindowStyle } from "../../widgets/styles/pixel-window";
 import { terminalCleanStyle, terminalVintageStyle } from "../../widgets/styles/terminal";
+import { vfdAmberStyle } from "../../widgets/styles/vfd-amber";
 import type { ThemeBodyViewport, ThemeStyle, ThemeStylePaints } from "../../widgets/styles/theme-style";
 
 export interface MetricFrameBody {
@@ -69,6 +70,7 @@ export function renderMetricFrame(options: {
             index,
             namespaceBodyIds: options.bodies.length > 1,
             themePreset: options.themePreset,
+            transformBody: resolveBodyTransform(style, options.themePaints),
         }))
         .join("");
     const panelAttributes = style.renderPanelAttributes?.(options.size, options.themePaints) ?? [];
@@ -129,6 +131,8 @@ function resolveThemePreset(themePreset: ThemePresetName): ThemeStyle {
             return terminalCleanStyle;
         case "terminal-vintage":
             return terminalVintageStyle;
+        case "vfd-amber":
+            return vfdAmberStyle;
     }
 }
 
@@ -142,16 +146,29 @@ function renderBodyViewportClipPath(clipId: string, viewport: ThemeBodyViewport)
         </clipPath>`;
 }
 
+function resolveBodyTransform(
+    style: ThemeStyle,
+    paints: ThemeStylePaints,
+): ((bodySvg: string) => string) | undefined {
+    const transformBody = style.transformBody;
+
+    return transformBody === undefined
+        ? undefined
+        : bodySvg => transformBody.call(style, bodySvg, paints);
+}
+
 function renderFrameBody(options: {
     body: MetricFrameBody;
     filterId: string;
     index: number;
     namespaceBodyIds: boolean;
     themePreset: ThemePresetName;
+    transformBody: ((bodySvg: string) => string) | undefined;
 }): string {
+    const themedBodySvg = options.transformBody?.(options.body.svg) ?? options.body.svg;
     const wrappedBodySvg = options.body.muted
-        ? `<g filter="url(#${options.filterId})">${options.body.svg}</g>`
-        : options.body.svg;
+        ? `<g filter="url(#${options.filterId})">${themedBodySvg}</g>`
+        : themedBodySvg;
     const bodySvg = options.namespaceBodyIds
         ? namespaceSvgFragmentIds(wrappedBodySvg, `body-${options.index}`)
         : wrappedBodySvg;

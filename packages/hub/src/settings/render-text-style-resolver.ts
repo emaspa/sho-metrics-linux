@@ -4,6 +4,7 @@ import {
     TERMINAL_CLEAN_RENDER_TEXT_STYLES,
     TERMINAL_VINTAGE_RENDER_TEXT_STYLES,
     TITLE_CARD_RENDER_TEXT_STYLES,
+    VFD_RENDER_TEXT_STYLES,
     type RenderTextStyles,
 } from "../view-rendering/rasterize/render-text-style";
 import type { ResolvedAppearanceSettings } from "./resolved-settings";
@@ -26,6 +27,8 @@ export function resolveRenderTextStyles(settings: ResolvedAppearanceSettings): R
                 : TERMINAL_CLEAN_RENDER_TEXT_STYLES;
         case "pixel-window":
             return PIXEL_RENDER_TEXT_STYLES;
+        case "vfd-amber":
+            return VFD_RENDER_TEXT_STYLES;
         case "flat":
         case "cupertino-glass":
         case "color-filled":

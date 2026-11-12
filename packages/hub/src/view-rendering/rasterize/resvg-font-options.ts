@@ -5,7 +5,7 @@ import { STATIC_INTER_FONT_FILE_NAMES } from "./render-font-weight";
 import { JAPANESE_SERIF_RENDER_FONT_FAMILY } from "./render-text-style";
 
 export type FontScript = "han" | "kana" | "hangul" | "symbol";
-export type BundledFontFamily = "share-tech-mono" | "dotgothic16";
+export type BundledFontFamily = "share-tech-mono" | "dotgothic16" | "dseg";
 
 export interface ResvgFontResolverEnvironment {
     platform: NodeJS.Platform;
@@ -17,6 +17,8 @@ export interface ResvgFontResolverEnvironment {
     bundledInterFontFiles?: readonly string[];
     bundledShareTechMonoFontFile?: string;
     bundledDotGothic16FontFile?: string;
+    /** DSEG7 and DSEG14 faces used by the VFD theme. */
+    bundledDsegFontFiles?: readonly string[];
     /**
      * Bundled fallback for title-card Japanese serif text when no preferred
      * system Japanese serif font file is available.
@@ -37,6 +39,10 @@ const DEFAULT_FONT_RESOLVER_ENVIRONMENT: ResvgFontResolverEnvironment = {
         .map(fontFileName => resolveBundledFontFile("inter", fontFileName)),
     bundledShareTechMonoFontFile: resolveBundledFontFile("share-tech-mono", "ShareTechMono-Regular.ttf"),
     bundledDotGothic16FontFile: resolveBundledFontFile("dotgothic16", "DotGothic16-Regular.ttf"),
+    bundledDsegFontFiles: [
+        resolveBundledFontFile("dseg", "DSEG7Classic-Italic.ttf"),
+        resolveBundledFontFile("dseg", "DSEG14Classic-Italic.ttf"),
+    ],
     bundledJapaneseSerifFontFile: resolveBundledFontFile("biz-udpmincho", "BIZUDPMincho-Regular.ttf"),
 };
 
@@ -83,6 +89,7 @@ export function resolveResvgFontOptions(
         ...environment.bundledInterFontFiles ?? [],
         environment.bundledShareTechMonoFontFile ?? "",
         environment.bundledDotGothic16FontFile ?? "",
+        ...environment.bundledDsegFontFiles ?? [],
         environment.bundledJapaneseSerifFontFile ?? "",
         environment.preferBundledJapaneseSerifFont ? "prefer-bundled-japanese-serif" : "",
         usesJapaneseSerifFontFamily ? "japanese-serif" : "",
@@ -141,6 +148,10 @@ export function detectBundledFontFamiliesFromSvg(svgString: string): readonly Bu
         bundledFontFamilyList.push("dotgothic16");
     }
 
+    if (/\bDSEG(?:7|14) Classic\b/u.test(svgString)) {
+        bundledFontFamilyList.push("dseg");
+    }
+
     return bundledFontFamilyList;
 }
 
@@ -178,6 +189,7 @@ function resolveFontFiles(
         ...environment.bundledInterFontFiles ?? [],
         environment.bundledShareTechMonoFontFile ?? "",
         environment.bundledDotGothic16FontFile ?? "",
+        ...environment.bundledDsegFontFiles ?? [],
         environment.bundledJapaneseSerifFontFile ?? "",
         environment.preferBundledJapaneseSerifFont ? "prefer-bundled-japanese-serif" : "",
         usesJapaneseSerifFontFamily ? "japanese-serif" : "",
@@ -231,6 +243,8 @@ function resolveBundledFontFileCandidates(
         case "dotgothic16":
             return [environment.bundledDotGothic16FontFile]
                 .filter((fontFile): fontFile is string => Boolean(fontFile));
+        case "dseg":
+            return [...environment.bundledDsegFontFiles ?? []];
     }
 }
 

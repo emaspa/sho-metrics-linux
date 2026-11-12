@@ -236,6 +236,7 @@ export function resolveAppearanceDefaultsForViewAndTheme(
         case "color-filled":
         case "terminal":
         case "pixel-window":
+        case "vfd-amber":
             return themeDefaults;
     }
 }
@@ -564,6 +565,7 @@ export function applyGlobalPaintOverride(
                 },
             };
         case "pixel-window":
+        case "vfd-amber":
             return appearance;
     }
 }

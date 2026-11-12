@@ -63,6 +63,8 @@ const VISUAL_TEST_BIZ_UDP_MINCHO_FONT_FILE = path.resolve(
     "biz-udpmincho",
     "BIZUDPMincho-Regular.ttf",
 );
+const VISUAL_TEST_DSEG_FONT_FILES: readonly string[] = ["DSEG7Classic-Italic.ttf", "DSEG14Classic-Italic.ttf"]
+    .map(fontFileName => path.resolve(process.cwd(), "assets", "fonts", "dseg", fontFileName));
 const NETWORK_DIRECTION_ICON_SIZE = 30;
 
 type VisualMetricView = "circle" | "text" | "bar" | "line";
@@ -488,6 +490,7 @@ export function renderSvgToPngBuffer(svg: string, keySize: KeySize): Buffer {
             bundledInterFontFiles: VISUAL_TEST_INTER_FONT_FILES,
             bundledShareTechMonoFontFile: VISUAL_TEST_SHARE_TECH_MONO_FONT_FILE,
             bundledDotGothic16FontFile: VISUAL_TEST_DOT_GOTHIC_16_FONT_FILE,
+            bundledDsegFontFiles: VISUAL_TEST_DSEG_FONT_FILES,
             bundledJapaneseSerifFontFile: VISUAL_TEST_BIZ_UDP_MINCHO_FONT_FILE,
             preferBundledJapaneseSerifFont: true,
         }),

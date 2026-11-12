@@ -83,6 +83,7 @@ export const themeOptionList = [
     { value: "color-filled", label: "Color Filled" },
     { value: "terminal", label: "Terminal" },
     { value: "pixel-window", label: "Pixel Window" },
+    { value: "vfd-amber", label: "VFD Amber" },
 ] as const satisfies readonly SelectOption[];
 
 export const terminalVariantOptionList = [

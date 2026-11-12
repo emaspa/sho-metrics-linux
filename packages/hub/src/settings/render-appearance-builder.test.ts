@@ -5,6 +5,7 @@ import {
     DEFAULT_RENDER_THEME_EFFECT_TOKENS,
     TERMINAL_CLEAN_RENDER_THEME_EFFECT_TOKENS,
     TERMINAL_VINTAGE_RENDER_THEME_EFFECT_TOKENS,
+    VFD_RENDER_THEME_EFFECT_TOKENS,
 } from "../view-rendering/rasterize/render-svg-effects";
 import {
     DEFAULT_RENDER_TEXT_STYLES,
@@ -12,6 +13,7 @@ import {
     TERMINAL_CLEAN_RENDER_TEXT_STYLES,
     TERMINAL_VINTAGE_RENDER_TEXT_STYLES,
     TITLE_CARD_RENDER_TEXT_STYLES,
+    VFD_RENDER_TEXT_STYLES,
 } from "../view-rendering/rasterize/render-text-style";
 import { DEFAULT_PIXEL_WINDOW_PALETTE } from "../view-rendering/color/pixel-window-theme-tokens";
 import { buildMetricRenderAppearance } from "./render-appearance-builder";
@@ -528,4 +530,32 @@ test("line smoothing and grid options pass through resolved appearance settings"
     assert.equal(visualSettings.lineSmoothingPercent, 95);
     assert.equal(visualSettings.gridLineVisibility, "always");
     assert.equal(visualSettings.gridLineType, "vertical");
+});
+
+test("VFD Amber maps to its own preset, text styles, effects, and phosphor paint", () => {
+    const vfdSettings = buildMetricRenderAppearance(buildAppearanceSettings({
+        theme: { selectedTheme: "vfd-amber" },
+    }));
+
+    assert.equal(vfdSettings.themePreset, "vfd-amber");
+    assert.deepEqual(vfdSettings.textStyles, VFD_RENDER_TEXT_STYLES);
+    assert.deepEqual(vfdSettings.themeEffects, VFD_RENDER_THEME_EFFECT_TOKENS);
+    assert.equal(vfdSettings.paints.metricValueText, "#ff9634");
+    assert.equal(vfdSettings.paintConstraint, "none");
+});
+
+test("VFD Amber meters turn red for the top 30% of the scale on every channel", () => {
+    const appearance = buildAppearanceSettings({ theme: { selectedTheme: "vfd-amber" } });
+
+    for (const channel of ["usage", "download", "upload", "diskRead", "diskWrite"] as const) {
+        assert.deepEqual(buildColorConfigFromAppearance(appearance, channel), {
+            mode: "threshold",
+            solidColor: "#ff9634",
+            thresholds: [
+                { min: 0, max: 70, color: "#ff9634" },
+                { min: 70, max: 101, color: "#ff3b2f" },
+            ],
+            isGradientEnabled: false,
+        });
+    }
 });

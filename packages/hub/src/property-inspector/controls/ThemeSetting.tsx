@@ -64,4 +64,5 @@ const themeMessageByValue = {
     "color-filled": optionMessages.colorFilledOption,
     terminal: optionMessages.terminalOption,
     "pixel-window": optionMessages.pixelWindowOption,
+    "vfd-amber": optionMessages.vfdAmberOption,
 } as const;

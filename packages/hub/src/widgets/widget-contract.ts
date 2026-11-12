@@ -18,5 +18,6 @@ export type ThemePresetName =
     | "cupertino-glass"
     | "color-filled"
     | "pixel-window"
+    | "vfd-amber"
     | "terminal-clean"
     | "terminal-vintage";

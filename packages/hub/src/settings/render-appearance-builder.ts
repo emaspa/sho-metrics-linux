@@ -56,6 +56,8 @@ function resolveThemePresetName(theme: ResolvedAppearanceThemeSettings): ThemePr
             return theme.terminal.variant === "vintage" ? "terminal-vintage" : "terminal-clean";
         case "pixel-window":
             return "pixel-window";
+        case "vfd-amber":
+            return "vfd-amber";
         case "flat":
         case "cupertino-glass":
         case "color-filled":

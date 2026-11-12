@@ -1272,6 +1272,7 @@ enum MetricTheme {
   METRIC_THEME_COLOR_FILLED = 3;
   METRIC_THEME_TERMINAL = 4;
   METRIC_THEME_PIXEL_WINDOW = 5;
+  METRIC_THEME_VFD_AMBER = 6;
 }
 
 enum TerminalThemeVariant {

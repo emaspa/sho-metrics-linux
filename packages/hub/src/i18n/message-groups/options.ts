@@ -141,6 +141,11 @@ export const optionMessages = {
         zh_CN: "像素窗口",
         ja: "ピクセルウィンドウ",
     },
+    vfdAmberOption: {
+        en: "VFD Amber",
+        zh_CN: "VFD 琥珀",
+        ja: "VFD アンバー",
+    },
     circleOption: {
         en: "Circle",
         zh_CN: "圆环",

@@ -30,3 +30,14 @@ export const TERMINAL_VINTAGE_RENDER_THEME_EFFECT_TOKENS = {
 export function buildSvgFilterAttributes(filter: string | undefined): readonly string[] {
     return filter ? [`filter="${filter}"`] : [];
 }
+
+export const VFD_VALUE_GLOW_FILTER_ID = "vfd-value-glow";
+export const VFD_LABEL_GLOW_FILTER_ID = "vfd-label-glow";
+export const VFD_METRIC_GLOW_FILTER_ID = "vfd-metric-glow";
+export const VFD_SUBTLE_GLOW_FILTER_ID = "vfd-subtle-glow";
+
+export const VFD_RENDER_THEME_EFFECT_TOKENS = {
+    iconFilter: `url(#${VFD_LABEL_GLOW_FILTER_ID})`,
+    metricFilter: `url(#${VFD_METRIC_GLOW_FILTER_ID})`,
+    subtleFilter: `url(#${VFD_SUBTLE_GLOW_FILTER_ID})`,
+} satisfies RenderThemeEffectTokens;

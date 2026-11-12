@@ -82,6 +82,7 @@ export const metricThemeByProto = {
     [StoredMetricTheme.COLOR_FILLED]: "color-filled",
     [StoredMetricTheme.TERMINAL]: "terminal",
     [StoredMetricTheme.PIXEL_WINDOW]: "pixel-window",
+    [StoredMetricTheme.VFD_AMBER]: "vfd-amber",
 } satisfies Record<StoredMetricTheme, MetricTheme | undefined>;
 
 export const terminalThemeVariantByProto = {

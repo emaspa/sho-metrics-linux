@@ -71,6 +71,13 @@ export interface ThemeStyle {
      */
     resolveBodyViewport?(keySize: KeySize, paints: ThemeStylePaints): ThemeBodyViewport;
 
+    /**
+     * Optional rewrite of each metric body SVG fragment before the frame places
+     * it, for treatments that depend on the body's own text, such as the unlit
+     * segments behind VFD readings.
+     */
+    transformBody?(bodySvg: string, paints: ThemeStylePaints): string;
+
     /** Overlay layer rendered ABOVE widget content (e.g. glass sheen). */
     renderOverlay(keySize: KeySize, paints: ThemeStylePaints): string;
 }

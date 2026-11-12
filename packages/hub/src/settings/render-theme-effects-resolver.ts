@@ -2,6 +2,7 @@ import {
     DEFAULT_RENDER_THEME_EFFECT_TOKENS,
     TERMINAL_CLEAN_RENDER_THEME_EFFECT_TOKENS,
     TERMINAL_VINTAGE_RENDER_THEME_EFFECT_TOKENS,
+    VFD_RENDER_THEME_EFFECT_TOKENS,
     type RenderThemeEffectTokens,
 } from "../view-rendering/rasterize/render-svg-effects";
 import type { ResolvedAppearanceSettings } from "./resolved-settings";
@@ -18,6 +19,8 @@ export function resolveRenderThemeEffects(settings: ResolvedAppearanceSettings):
             return settings.theme.terminal.variant === "vintage"
                 ? TERMINAL_VINTAGE_RENDER_THEME_EFFECT_TOKENS
                 : TERMINAL_CLEAN_RENDER_THEME_EFFECT_TOKENS;
+        case "vfd-amber":
+            return VFD_RENDER_THEME_EFFECT_TOKENS;
         case "flat":
         case "cupertino-glass":
         case "color-filled":

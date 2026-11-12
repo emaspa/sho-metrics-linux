@@ -9,6 +9,7 @@ import {
 
 const TERMINAL_FILL_TINTED_TRACK_LIGHTEN_PERCENT = 55;
 const PIXEL_WINDOW_FILL_TINTED_TRACK_LIGHTEN_PERCENT = 10;
+const VFD_FILL_TINTED_TRACK_LIGHTEN_PERCENT = -35;
 
 /** Describes dense-only theme choices before handing colors to the primitive. */
 interface DenseThemeRenderStrategy {
@@ -54,6 +55,14 @@ function resolveDenseThemeRenderStrategy(
             return {
                 fillTintedTrack: {
                     trackLightenPercent: TERMINAL_FILL_TINTED_TRACK_LIGHTEN_PERCENT,
+                },
+            };
+        case "vfd-amber":
+            // A dim phosphor track keeps the dark bar numbers readable across
+            // both the lit and the unlit part of the bar.
+            return {
+                fillTintedTrack: {
+                    trackLightenPercent: VFD_FILL_TINTED_TRACK_LIGHTEN_PERCENT,
                 },
             };
         case "pixel-window":
