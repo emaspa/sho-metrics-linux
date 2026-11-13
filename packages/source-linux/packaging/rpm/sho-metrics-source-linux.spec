@@ -1,8 +1,8 @@
-%global forkver 0.3.0-linux.8
+%global forkver 0.3.0-linux.9
 %global libdir  %{_prefix}/lib/%{name}
 
 Name:           sho-metrics-source-linux
-Version:        0.3.0^linux8
+Version:        0.3.0^linux9
 Release:        1%{?dist}
 Summary:        Linux hardware sensor helper daemon for the Sho Metrics OpenDeck plugin
 
@@ -110,6 +110,9 @@ SHOMETRICS_PROTO_DIR=%{buildroot}%{libdir}/proto \
 %{_udevrulesdir}/60-sho-metrics-rapl.rules
 
 %changelog
+* Fri Nov 13 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux9-1
+- No helper changes; the fork tag ships OpenXLR skin following in the plugin (v0.3.0-linux.9)
+
 * Thu Nov 12 2026 Emanuele Sparvoli <sparvoli@gmail.com> - 0.3.0^linux8-1
 - No helper changes; the fork tag ships the plugin VFD themes (v0.3.0-linux.8)
 
