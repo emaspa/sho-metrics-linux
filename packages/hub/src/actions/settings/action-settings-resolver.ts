@@ -64,6 +64,6 @@ function resolveRuntimeContext(
         runtimeMaximumDiskWriteThroughputMebibytesPerSecond:
             runtimeCache?.runtimeMaximumDiskWriteThroughputMebibytesPerSecond,
         runtimeMaximumGpuPowerWatts: runtimeCache?.runtimeMaximumGpuPowerWatts,
-        followedTheme: openXlrSkinFollower.followedTheme(),
+        followedSkin: openXlrSkinFollower.followedSkin(),
     };
 }

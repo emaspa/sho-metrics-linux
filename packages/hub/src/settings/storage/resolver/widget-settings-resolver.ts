@@ -27,8 +27,10 @@ import type {
     ResolvedStackedMetricWidget,
     ResolvedStackedMetricRotationSettings,
     ResolvedWidgetPreferences,
+    FollowedSkin,
+    FollowedSkinPalette,
+    ResolvedMetricPaintSettings,
     ResolvedWidgetSettings,
-    VfdMetricTheme,
 } from "../../resolved-settings";
 import { DEFAULT_APPEARANCE_SETTINGS } from "../../default-appearance-settings";
 import {
@@ -86,9 +88,9 @@ const DEFAULT_GPU_HARDWARE_SUMMARY_READING_KINDS = ["usage", "temperature", "vra
 export function resolveStoredWidgetSettings(
     options: ResolveStoredWidgetSettingsOptions,
 ): ResolvedWidgetSettings {
-    const globalSettings = applyFollowedTheme(
+    const globalSettings = applyFollowedSkin(
         resolveStoredGlobalSettings(options.storedGlobalSettings),
-        options.runtime?.followedTheme,
+        options.runtime?.followedSkin,
     );
 
     switch (options.storedWidgetSettings.widget.case) {
@@ -137,21 +139,67 @@ export function resolveStoredWidgetSettings(
 
 /** Resolves stored global defaults, overrides, and source profiles. */
 
-// A followed theme takes the place of the global theme override.
-function applyFollowedTheme(
+// A followed skin takes the place of the global theme and paint overrides.
+function applyFollowedSkin(
     globalSettings: ResolvedGlobalSettings,
-    followedTheme: VfdMetricTheme | undefined,
+    followedSkin: FollowedSkin | undefined,
 ): ResolvedGlobalSettings {
-    if (followedTheme === undefined) {
+    if (followedSkin === undefined) {
         return globalSettings;
+    }
+    const baseTheme = globalSettings.themeOverride?.theme ?? DEFAULT_APPEARANCE_SETTINGS.theme;
+    if (followedSkin.kind === "display") {
+        return {
+            ...globalSettings,
+            themeOverride: { theme: { ...baseTheme, selectedTheme: followedSkin.theme } },
+        };
     }
     return {
         ...globalSettings,
         themeOverride: {
             theme: {
-                ...(globalSettings.themeOverride?.theme ?? DEFAULT_APPEARANCE_SETTINGS.theme),
-                selectedTheme: followedTheme,
+                ...baseTheme,
+                selectedTheme: "flat",
+                flat: {
+                    paint: buildFollowedSkinMetricPaint(followedSkin.palette),
+                    skinPalette: followedSkin.palette,
+                },
             },
+        },
+        paintOverride: undefined,
+    };
+}
+
+// Every channel meters in the skin's fill, warning and hot colours.
+function buildFollowedSkinMetricPaint(palette: FollowedSkinPalette): ResolvedMetricPaintSettings {
+    const meterColors = {
+        lowColor: palette.meterFill,
+        mediumColor: palette.meterWarning,
+        highColor: palette.meterHot,
+    };
+    return {
+        colorMode: "multi-color",
+        solid: {
+            colors: {
+                usageColor: palette.meterFill,
+                downloadColor: palette.meterFill,
+                uploadColor: palette.meterFill,
+                diskReadColor: palette.meterFill,
+                diskWriteColor: palette.meterFill,
+            },
+            isGradientEnabled: false,
+        },
+        multiColor: {
+            colors: {
+                usage: meterColors,
+                download: meterColors,
+                upload: meterColors,
+                diskRead: meterColors,
+                diskWrite: meterColors,
+            },
+            lowThresholdPercent: palette.meterWarningPercent,
+            highThresholdPercent: palette.meterHotPercent,
+            isGradientEnabled: false,
         },
     };
 }

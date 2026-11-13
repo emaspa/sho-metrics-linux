@@ -456,7 +456,29 @@ export interface ResolvedAppearanceThemeSettings {
 
 export interface ResolvedFlatThemeSettings {
     readonly paint: ResolvedMetricPaintSettings;
+    /** Panel and text colours of a followed OpenXLR skin. Runtime only, never stored. */
+    readonly skinPalette?: FollowedSkinPalette | undefined;
 }
+
+/** Opaque #rrggbb colours of an OpenXLR skin, as the flat theme wears them. */
+export interface FollowedSkinPalette {
+    readonly background: string;
+    readonly primaryText: string;
+    readonly mutedText: string;
+    readonly track: string;
+    readonly meterFill: string;
+    readonly meterWarning: string;
+    readonly meterHot: string;
+    /** 0..100 */
+    readonly meterWarningPercent: number;
+    /** 0..100 */
+    readonly meterHotPercent: number;
+}
+
+/** What widgets wear for an OpenXLR skin: a VFD theme, or the flat theme in the skin's colours. */
+export type FollowedSkin =
+    | { readonly kind: "display"; readonly theme: VfdMetricTheme }
+    | { readonly kind: "palette"; readonly palette: FollowedSkinPalette };
 
 export interface ResolvedCupertinoGlassThemeSettings {
     readonly paint: ResolvedMetricPaintSettings;

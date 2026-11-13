@@ -25,10 +25,13 @@ export default defineConfig({
             provider: "v8",
         },
         environment: "node",
-        // Widgets follow an OpenXLR display skin; tests must not depend on
-        // the skin the machine running them wears.
+        // Widgets follow OpenXLR's skin; tests run as if OpenXLR were not
+        // installed, whatever the machine running them has.
         env: {
-            OPENXLR_SKIN: "broadcast",
+            OPENXLR_SKIN: "",
+            XDG_CONFIG_HOME: "test-results/no-openxlr/config",
+            XDG_DATA_HOME: "test-results/no-openxlr/data",
+            XDG_DATA_DIRS: "test-results/no-openxlr/data-dirs",
         },
         exclude: [
             "node_modules/**",

@@ -444,7 +444,7 @@ describe("stored settings proto resolver", () => {
         assert.equal(settings.widget.slot.appearance.theme.flat.paint.colorMode, "multi-color");
     });
 
-    it("puts a followed theme over the widget theme", () => {
+    it("puts a followed OpenXLR skin over the widget theme", () => {
         const storedWidgetSettings = readStoredWidgetSettings({
             singleMetric: {
                 slot: {
@@ -458,17 +458,41 @@ describe("stored settings proto resolver", () => {
                 },
             },
         }).settings;
+        const skinPalette = {
+            background: "#222222",
+            primaryText: "#e6e6e6",
+            mutedText: "#8c8c8c",
+            track: "#141414",
+            meterFill: "#4ade80",
+            meterWarning: "#facc15",
+            meterHot: "#ef4444",
+            meterWarningPercent: 70,
+            meterHotPercent: 90,
+        };
 
-        const followedSettings = resolveSingleMetricWidgetSettings({
+        const displaySettings = resolveSingleMetricWidgetSettings({
             storedWidgetSettings,
-            runtime: { followedTheme: "vfd-blue" },
+            runtime: { followedSkin: { kind: "display", theme: "vfd-blue" } },
         });
+        const paletteTheme = resolveSingleMetricWidgetSettings({
+            storedWidgetSettings,
+            runtime: { followedSkin: { kind: "palette", palette: skinPalette } },
+        }).widget.slot.appearance.theme;
         const ownSettings = resolveSingleMetricWidgetSettings({
             storedWidgetSettings,
-            runtime: { followedTheme: undefined },
+            runtime: { followedSkin: undefined },
         });
 
-        assert.equal(followedSettings.widget.slot.appearance.theme.selectedTheme, "vfd-blue");
+        assert.equal(displaySettings.widget.slot.appearance.theme.selectedTheme, "vfd-blue");
+        assert.equal(paletteTheme.selectedTheme, "flat");
+        assert.deepEqual(paletteTheme.flat.skinPalette, skinPalette);
+        assert.equal(paletteTheme.flat.paint.colorMode, "multi-color");
+        assert.deepEqual(paletteTheme.flat.paint.multiColor.colors.usage, {
+            lowColor: "#4ade80",
+            mediumColor: "#facc15",
+            highColor: "#ef4444",
+        });
+        assert.equal(paletteTheme.flat.paint.multiColor.lowThresholdPercent, 70);
         assert.equal(ownSettings.widget.slot.appearance.theme.selectedTheme, "terminal");
     });
 

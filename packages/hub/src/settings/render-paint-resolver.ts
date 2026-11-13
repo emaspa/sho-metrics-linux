@@ -10,6 +10,7 @@ import { parseHexColor, resolveRelativeLuminance } from "../shared/color-utils";
 import type { MetricColorChannel } from "./appearance-overrides";
 import type {
     ColorMode,
+    FollowedSkinPalette,
     ResolvedAppearanceSettings,
     ResolvedColorFilledPaintSettings,
     ResolvedMetricPaintSettings,
@@ -308,6 +309,14 @@ function buildRenderPaintTokens(
     const primaryMetric = buildColorConfigFromAppearance(settings, "usage");
     const backgroundFill = buildRenderBackgroundFill(settings);
 
+    if (settings.theme.selectedTheme === "flat" && settings.theme.flat.skinPalette) {
+        return {
+            ...skinRenderPaintTokens(settings.theme.flat.skinPalette),
+            backgroundFill: undefined,
+            primaryMetric,
+        };
+    }
+
     if (paintConstraint === "black-white") {
         return {
             ...DEFAULT_RENDER_PAINT_TOKENS,
@@ -356,6 +365,29 @@ function buildRenderPaintTokens(
         ...DEFAULT_RENDER_PAINT_TOKENS,
         backgroundFill,
         primaryMetric,
+    };
+}
+
+// The flat theme's white-on-black text alphas, over a followed OpenXLR skin's colours.
+function skinRenderPaintTokens(palette: FollowedSkinPalette): Omit<RenderPaintTokens, "backgroundFill" | "primaryMetric"> {
+    const primary = formatRgbChannels(palette.primaryText);
+    const muted = formatRgbChannels(palette.mutedText);
+
+    return {
+        background: palette.background,
+        surface: rgba(primary, 0.08),
+        primaryText: palette.primaryText,
+        secondaryText: rgba(primary, 0.76),
+        mutedText: palette.mutedText,
+        icon: rgba(primary, 0.9),
+        barTitleText: rgba(primary, 0.9),
+        metricValueText: palette.primaryText,
+        barValueText: palette.primaryText,
+        barUnitText: rgba(primary, 0.78),
+        barSecondaryText: rgba(primary, 0.8),
+        track: palette.track,
+        grid: rgba(muted, 0.4),
+        divider: rgba(muted, 0.4),
     };
 }
 
