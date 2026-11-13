@@ -6,6 +6,13 @@ All notable changes to ShoMetrics will be documented in this file.
 
 ### Linux plugin
 
+Released as fork tag `v0.3.0-linux.9`.
+
+- Follow the OpenXLR skin. With OpenXLR installed, every widget wears the skin
+  OpenXLR wears and changes with it: the VFD skins turn widgets to the matching
+  VFD theme, any other skin to the flat theme in the skin's card, text and
+  meter colours. Without OpenXLR, widgets keep their own themes.
+
 Released as fork tag `v0.3.0-linux.8`.
 
 - Add three vacuum fluorescent display themes: VFD Amber, VFD Blue and VFD
