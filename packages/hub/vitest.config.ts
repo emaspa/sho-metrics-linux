@@ -25,6 +25,11 @@ export default defineConfig({
             provider: "v8",
         },
         environment: "node",
+        // Widgets follow an OpenXLR display skin; tests must not depend on
+        // the skin the machine running them wears.
+        env: {
+            OPENXLR_SKIN: "broadcast",
+        },
         exclude: [
             "node_modules/**",
             "src/**/*.pi.test.tsx",

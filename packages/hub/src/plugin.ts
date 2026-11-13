@@ -16,6 +16,7 @@ import { backgroundMetricCollection } from "./runtime/metric-collection/backgrou
 import { helperUpdateNotifier } from "./runtime/helper-update/helper-update-notifier";
 import { sendHelperUpdateNoticeResultMessage } from "./property-inspector/helper-update-notice-messages";
 import { updateCommittedColorCompensationProfileFromStoredSettings } from "./color-compensation/runtime-store";
+import { openXlrSkinFollower } from "./runtime/openxlr/openxlr-skin-follower";
 import { STREAM_DECK_PLUGIN_UUID } from "./shared/stream-deck-actions";
 
 logger.setLevel(__LOG_LEVEL__);
@@ -72,6 +73,7 @@ log.info(() => [
 process.once("exit", () => {
     helperUpdateNotifier.dispose();
     backgroundMetricCollection.dispose();
+    openXlrSkinFollower.dispose();
 });
 
 streamDeck.connect()

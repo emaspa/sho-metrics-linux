@@ -1,5 +1,6 @@
 import { pluginGlobalSettingsStore } from "../../settings/global-settings-store";
 import { logger } from "../../logging/node-logger";
+import { openXlrSkinFollower } from "../../runtime/openxlr/openxlr-skin-follower";
 import { supportsHelperSourceOnPlatform } from "../../runtime/source-capabilities/helper-source-platform-capabilities";
 import type { ActionKind } from "../../shared/stream-deck-actions";
 import type { WidgetRuntimeCachePatch } from "../../runtime/widget-runtime-cache";
@@ -63,5 +64,6 @@ function resolveRuntimeContext(
         runtimeMaximumDiskWriteThroughputMebibytesPerSecond:
             runtimeCache?.runtimeMaximumDiskWriteThroughputMebibytesPerSecond,
         runtimeMaximumGpuPowerWatts: runtimeCache?.runtimeMaximumGpuPowerWatts,
+        followedTheme: openXlrSkinFollower.followedTheme(),
     };
 }

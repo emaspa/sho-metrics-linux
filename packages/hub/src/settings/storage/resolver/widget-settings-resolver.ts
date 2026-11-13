@@ -28,7 +28,9 @@ import type {
     ResolvedStackedMetricRotationSettings,
     ResolvedWidgetPreferences,
     ResolvedWidgetSettings,
+    VfdMetricTheme,
 } from "../../resolved-settings";
+import { DEFAULT_APPEARANCE_SETTINGS } from "../../default-appearance-settings";
 import {
     DENSE_MULTI_METRIC_MAX_SLOT_COUNT,
     DENSE_MULTI_METRIC_MIN_SLOT_COUNT,
@@ -84,7 +86,10 @@ const DEFAULT_GPU_HARDWARE_SUMMARY_READING_KINDS = ["usage", "temperature", "vra
 export function resolveStoredWidgetSettings(
     options: ResolveStoredWidgetSettingsOptions,
 ): ResolvedWidgetSettings {
-    const globalSettings = resolveStoredGlobalSettings(options.storedGlobalSettings);
+    const globalSettings = applyFollowedTheme(
+        resolveStoredGlobalSettings(options.storedGlobalSettings),
+        options.runtime?.followedTheme,
+    );
 
     switch (options.storedWidgetSettings.widget.case) {
         case "hardwareSummary":
@@ -131,6 +136,25 @@ export function resolveStoredWidgetSettings(
 }
 
 /** Resolves stored global defaults, overrides, and source profiles. */
+
+// A followed theme takes the place of the global theme override.
+function applyFollowedTheme(
+    globalSettings: ResolvedGlobalSettings,
+    followedTheme: VfdMetricTheme | undefined,
+): ResolvedGlobalSettings {
+    if (followedTheme === undefined) {
+        return globalSettings;
+    }
+    return {
+        ...globalSettings,
+        themeOverride: {
+            theme: {
+                ...(globalSettings.themeOverride?.theme ?? DEFAULT_APPEARANCE_SETTINGS.theme),
+                selectedTheme: followedTheme,
+            },
+        },
+    };
+}
 
 function readStoredSingleMetricWidget(storedWidgetSettings: StoredWidgetSettings): StoredSingleMetricWidget | undefined {
     switch (storedWidgetSettings.widget.case) {

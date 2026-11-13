@@ -28,6 +28,7 @@ import {
     type OpenDeckPropertyInspectorChannel,
 } from "../runtime/opendeck/pi-channel";
 import { pluginGlobalSettingsStore } from "../settings/global-settings-store";
+import { openXlrSkinFollower } from "../runtime/openxlr/openxlr-skin-follower";
 import {
     resolveActionSettings,
     resolveInitialActionSettings,
@@ -161,6 +162,17 @@ export abstract class MetricAction extends SingletonAction {
         pluginGlobalSettingsStore.subscribe(() => {
             this.resubscribeAllActions();
             for (const activeActionState of this.activeActionStates.values()) {
+                this.refreshMetricView(activeActionState.event);
+            }
+        });
+        // A new OpenXLR skin only changes how widgets look, so metric
+        // subscriptions stay as they are.
+        openXlrSkinFollower.subscribe(() => {
+            for (const activeActionState of this.activeActionStates.values()) {
+                activeActionState.resolvedSettings = this.resolveRawSettings(
+                    activeActionState.rawSettings,
+                    activeActionState.runtimeCacheStore.current(),
+                );
                 this.refreshMetricView(activeActionState.event);
             }
         });

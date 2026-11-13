@@ -444,6 +444,34 @@ describe("stored settings proto resolver", () => {
         assert.equal(settings.widget.slot.appearance.theme.flat.paint.colorMode, "multi-color");
     });
 
+    it("puts a followed theme over the widget theme", () => {
+        const storedWidgetSettings = readStoredWidgetSettings({
+            singleMetric: {
+                slot: {
+                    overrides: {
+                        appearance: {
+                            theme: {
+                                selectedTheme: "METRIC_THEME_TERMINAL",
+                            },
+                        },
+                    },
+                },
+            },
+        }).settings;
+
+        const followedSettings = resolveSingleMetricWidgetSettings({
+            storedWidgetSettings,
+            runtime: { followedTheme: "vfd-blue" },
+        });
+        const ownSettings = resolveSingleMetricWidgetSettings({
+            storedWidgetSettings,
+            runtime: { followedTheme: undefined },
+        });
+
+        assert.equal(followedSettings.widget.slot.appearance.theme.selectedTheme, "vfd-blue");
+        assert.equal(ownSettings.widget.slot.appearance.theme.selectedTheme, "terminal");
+    });
+
     it("preserves an explicit text view metric paint selection", () => {
         const storedWidgetSettings = readStoredWidgetSettings({
             singleMetric: {
